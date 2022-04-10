@@ -1,0 +1,95 @@
+syntax = "proto3";
+
+package pb_generate;
+option go_package = "./pb_generate;pb";
+
+enum Constants {
+  Default = 0x0000; //0
+  Magic = 0xC0C0;
+}
+
+enum SerializeFlag {
+  PlainSerial = 0x0; //普通文本
+  PbSerial = 0x1; //pb
+  JsonSerial = 0x2;
+
+  MaxSerial = 0xF;
+}
+
+enum AuthCode {
+  AuthSuccess = 0x0;
+  AuthFailure = 0x1;
+}
+
+enum ClientType {
+  ClientTypeUnknown = 0x0;
+  ClientTypeIos = 0x1;
+  ClientTypeAndroid = 0x2;
+  ClientTypeH5 = 0x3;
+}
+
+enum MsgType {
+  MsgTypeMin = 0x000; //0
+
+  //client-->server奇数 client<--server偶数
+
+  //client
+  MsgTypeAckClient = 0x100;
+  MsgTypeKickOut = 0x102;
+
+
+
+
+  //server msg
+  //-----heartbeat----
+  MsgTypeHeartbeatUp = 0x200;
+  MsgTypeHeartbeatDown = 0x201;
+  //-----auth----
+  MsgTypeAuthUp = 0x202;
+  MsgTypeAuthDown = 0x203;
+  MsgTypeAuthVerifyUp = 0x204;
+  MsgTypeAuthVerifyDown = 0x205;
+
+
+
+  //client ack to server
+  MsgTypeAckServer = 0x2FD;
+
+  MsgTypeServerMax = 0x2FF;
+  //server msg end
+
+
+}
+
+message Header {
+  uint32 msgType = 1;
+  uint64 msgId = 2;
+  UserInfo userInfo = 3;
+  uint32 version = 4; // 0， 升级版本递增1
+  uint64 timestamp = 5; //unix时间戳，Java的话要 Instant.now().toMill()
+  bool ack = 8; //是否进行应答，确认消息收到
+}
+
+message Payload {
+  bytes payload = 1;
+}
+
+
+
+message UserInfo {
+  uint64 uid = 1; //用户id
+  uint64 did = 2; //设备id
+  ClientType clientType = 3;
+  string clientVer = 4;
+}
+
+
+
+//payload
+//属性上报
+message PropUpload {
+  map<string, string> props = 1;
+}
+
+
+
