@@ -31,11 +31,11 @@
 
 ```javascript
                                       Fixed Header (15 bytes)                                             Actual Content
-                +-----------+--------------------------+--------------+---------------+      +-----------------------+----------------+
-byte offset     |     2     |            3             |      7       |       15      |      |      header len       |   payload len  |
-field and bytes |  magic 2  |          flag 1          | header len 4 | payload len 8 |----->|   Variable Header     |     Payload    |
-content         |   0xC0C0  |  version+serialize flag  |     uint32   |   uint64      |      |  msgType,userInfo...  | "HELLO, WORLD" |
-                +-----------+--------------------------+--------------+---------------+      +-----------------------+----------------+
+            +-----------+--------------------------+-------------+--------------+      +-----------------------+-------------------------------+
+byte offset |     2     |            3             |      7      |      15      |      |    15 + headerLen     |  15 + headerLen + payloadLen  |
+field/bytes |  magic 2  |          flag 1          | headerLen 4 | payloadLen 8 |----->|    Variable Header    |             Payload           |
+content     |   0xC0C0  |  version+serialize flag  |     uint32  |   uint64     |      |   msgType,userInfo... |         "HELLO, WORLD"        |
+            +-----------+--------------------------+-------------+--------------+      +-----------------------+-------------------------------+
 ```
 
 ### 三、context和handler
