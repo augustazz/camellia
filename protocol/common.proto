@@ -59,10 +59,12 @@ enum MsgType {
   //server msg end
 
 
+
+
 }
 
 message Header {
-  uint32 msgType = 1;
+  MsgType msgType = 1;
   uint64 msgId = 2;
   UserInfo userInfo = 3;
   uint32 version = 4; // 0， 升级版本递增1
@@ -70,7 +72,7 @@ message Header {
   bool ack = 8; //是否进行应答，确认消息收到
 }
 
-message Payload {
+message SimplePayload {
   bytes payload = 1;
 }
 
@@ -89,6 +91,10 @@ message UserInfo {
 //属性上报
 message PropUpload {
   map<string, string> props = 1;
+}
+
+message AuthReq {
+  string sig = 1;
 }
 
 

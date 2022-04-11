@@ -10,6 +10,7 @@ import (
 	"time"
 )
 
+
 var connections = struct {
 	cache map[uint64]*Connection
 	lock  sync.Mutex
@@ -22,7 +23,7 @@ type Connection struct {
 	Id   uint64
 	conn *net.Conn
 
-	recvChan   chan *datapack.TcpPackage
+	recvChan   chan datapack.Message
 	writeChan chan []byte
 
 	Ctx *channel.ConnContext
@@ -33,11 +34,12 @@ func NewConnection(id uint64, conn *net.Conn) *Connection {
 	c := &Connection{
 		Id:        id,
 		conn:      conn,
-		recvChan:   make(chan *datapack.TcpPackage, 512),
+		recvChan:   make(chan datapack.Message, 512),
 		writeChan: make(chan []byte, 512),
 	}
 	c.Ctx = &channel.ConnContext{WriteChan: c.writeChan}
-	c.Ctx.InitHandlerContext()
+	//init default and handlerContext
+	c.Ctx.InitHandlerContext(channel.DispatchHandlerContextFunc)
 
 	go c.startWriteHandler()
 	go c.startMsgHandler()
@@ -73,7 +75,6 @@ func (c *Connection) ReadLoop() {
 			continue
 		}
 
-		pack.PreReadData() //初始化header和payload []byte ...
 		message := make([]byte, pack.MsgLen())
 		_, err = io.ReadFull(*c.conn, message)
 		if err != nil {
@@ -81,7 +82,7 @@ func (c *Connection) ReadLoop() {
 			continue
 		}
 		pack.UnPackFrameData(message)
-		c.recvChan <- &pack
+		c.recvChan <- pack.GetMessage()
 	}
 
 	c.Close()
@@ -90,8 +91,8 @@ func (c *Connection) ReadLoop() {
 func (c *Connection) startMsgHandler() {
 	for {
 		select {
-		case pkg := <-c.recvChan:
-			c.Ctx.Head.Fire(c.Ctx, pkg)
+		case msg := <-c.recvChan:
+			c.Ctx.Head.Fire(c.Ctx, msg)
 		default:
 			time.Sleep(time.Second)
 		}

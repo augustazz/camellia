@@ -27,62 +27,15 @@ type TcpPackage struct {
 	flag       uint8
 	headerLen  uint32
 	payloadLen uint64
-
-	header  []byte
-	payload []byte
+	dataPack   []byte
+	//header  []byte
+	//payload []byte
 }
 
-type Message interface {
-	SerializeFlag() uint8
-	SerializeHeader() []byte
-	SerializePayload() []byte
-
-	DeserializeHeader([]byte)
-	DeserializePayload([]byte)
-}
-
-type PbMessage struct {
-	Header  *pb.Header
-	Payload *pb.Payload
-}
-
-func NewPbMessage() *PbMessage {
-	return &PbMessage{
-		Header:  &pb.Header{},
-		Payload: &pb.Payload{},
-	}
-}
-
-func (m *PbMessage) SerializeFlag() uint8 {
-	return 0
-}
-
-func (m *PbMessage) SerializeHeader() []byte {
-	h, err := proto.Marshal(m.Header)
-	checkErr(err, "marshal header err")
-	return h
-}
-
-func (m *PbMessage) SerializePayload() []byte {
-	p, err := proto.Marshal(m.Payload)
-	checkErr(err, "marshal payload err")
-	return p
-}
-
-func (m *PbMessage) DeserializeHeader(b []byte) {
-	err := proto.Unmarshal(b, m.Header)
-	checkErr(err, "unmarshal header err")
-}
-
-func (m *PbMessage) DeserializePayload(b []byte) {
-	err := proto.Unmarshal(b, m.Payload)
-	checkErr(err, "unmarshal payload err")
-}
-
-func (pkg *TcpPackage) PreReadData() {
-	pkg.header = make([]byte, pkg.headerLen)
-	pkg.payload = make([]byte, pkg.payloadLen)
-}
+//func (pkg *TcpPackage) PreReadData() {
+//	pkg.header = make([]byte, pkg.headerLen)
+//	pkg.payload = make([]byte, pkg.payloadLen)
+//}
 
 func (pkg *TcpPackage) MsgLen() uint64 {
 	return uint64(pkg.headerLen) + pkg.payloadLen
@@ -159,8 +112,8 @@ func (pkg *TcpPackage) UnPackFrameHeader(data []byte) error {
 }
 
 func (pkg *TcpPackage) UnPackFrameData(data []byte) {
-	pkg.header = data[:pkg.headerLen]
-	pkg.payload = data[pkg.headerLen:]
+	pkg.dataPack = data
+
 	//var err error
 	//buf := bytes.NewReader(data)
 	//
@@ -171,15 +124,82 @@ func (pkg *TcpPackage) UnPackFrameData(data []byte) {
 	//checkErr(err, "write payload err")
 }
 
+//GetMessage header解析成pb message，payload不解析，交给业务处理
 func (pkg *TcpPackage) GetMessage() Message {
 	//var err error
 	//flag := pkg.flag
 	//pb
-	dp := NewPbMessage()
-	dp.DeserializeHeader(pkg.header)
-	dp.DeserializePayload(pkg.payload)
+	dp := NewPbMessageHeader()
 
+	dp.DeserializeHeader(pkg.dataPack[:pkg.headerLen])
+	dp.Payload = pkg.dataPack[pkg.headerLen:]
 	return dp
+}
+
+
+//------------Message-----------
+
+//Message 消息数据
+type Message interface {
+	SerializeFlag() uint8
+	SerializeHeader() []byte
+	SerializePayload() []byte
+
+	DeserializeHeader([]byte)
+	GetPayload() []byte
+
+	//GetMessageHeader()
+	//GetMessagePayload()
+	//DeserializePayload([]byte)
+}
+
+type PbMessage struct {
+	Header *pb.Header
+
+	Payload   []byte
+	PayloadPb proto.Message
+}
+
+func NewPbMessageHeader() *PbMessage {
+	return &PbMessage{
+		Header:  &pb.Header{},
+	}
+}
+
+func NewPbMessage() *PbMessage {
+	return &PbMessage{
+		Header:  &pb.Header{},
+	}
+}
+
+func (m *PbMessage) SerializeFlag() uint8 {
+	return uint8(pb.SerializeFlag_PbSerial)
+}
+
+func (m *PbMessage) SerializeHeader() []byte {
+	h, err := proto.Marshal(m.Header)
+	checkErr(err, "marshal header err")
+	return h
+}
+
+func (m *PbMessage) SerializePayload() []byte {
+	p, err := proto.Marshal(m.PayloadPb)
+	checkErr(err, "marshal payload err")
+	return p
+}
+
+func (m *PbMessage) DeserializeHeader(b []byte) {
+	err := proto.Unmarshal(b, m.Header)
+	checkErr(err, "unmarshal header err")
+}
+
+
+func (m *PbMessage) GetPayload() []byte {
+	return m.Payload
+}
+
+func GetSerializeFlag(flag uint8) pb.SerializeFlag {
+	return 0
 }
 
 func checkErr(err error, ifErr string) {

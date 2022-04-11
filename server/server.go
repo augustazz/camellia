@@ -10,19 +10,22 @@ import (
 var id uint64
 
 type Server struct {
+	Port int
 }
 
-func (server *Server) Start() {
-	listener, err := net.ListenTCP("tcp4", &net.TCPAddr{
-		IP:   net.IPv4(127, 0, 0, 1),
-		Port: 9090,
-	})
-	checkErr(err, "listen err", true)
+func (s *Server) Start() {
+	listener, err := net.Listen("tcp4", fmt.Sprintf(":%d", s.Port))
 
-	fmt.Println("start success, port: ", 9090)
+	//listener, err := net.ListenTCP("tcp4", &net.TCPAddr{
+	//	IP:   net.IPv4(127, 0, 0, 1),
+	//	Port: s.Port,
+	//})
+	checkErr(err, "listen err", true)
+	fmt.Println("start success, port: ", s.Port)
 
 	for {
-		conn, err := listener.Accept()
+		var conn net.Conn
+		conn, err = listener.Accept()
 		checkErr(err, "listen err", false)
 		dealConn(&conn)
 		id++
@@ -42,7 +45,7 @@ func dealConn(conn *net.Conn) {
 	go c.ReadLoop()
 }
 
-func (server *Server) stop() error {
+func (s *Server) stop() error {
 	return nil
 }
 

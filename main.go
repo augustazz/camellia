@@ -3,6 +3,8 @@ package main
 import "camellia/server"
 
 func main() {
-	server := server.Server{}
-	server.Start()
+	s := server.Server{
+		Port: 9090,
+	}
+	s.Start()
 }

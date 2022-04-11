@@ -27,12 +27,12 @@ func write(conn *core.Connection) {
 	for {
 		msg := datapack.PbMessage{
 			Header: &pb.Header{
-				MsgType: 1000,
+				MsgType: pb.MsgType_MsgTypeAuthUp,
 				MsgId:   counter,
 				Ack: true,
 			},
-			Payload: &pb.Payload{
-				Payload: []byte(time.Now().Format("2006-01-02 15:04:05")),
+			PayloadPb: &pb.AuthReq{
+				Sig: "auth secret sign",
 			},
 		}
 		pack := datapack.TcpPackage{}

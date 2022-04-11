@@ -15,7 +15,8 @@ type ConnContext struct {
 	Head, Tail HandlerContext
 }
 
-func (ctx *ConnContext) InitHandlerContext() {
+//InitHandlerContext init default and handlerContext Initializer provider func
+func (ctx *ConnContext) InitHandlerContext(providers ...Initializer) {
 	if ctx.isInit {
 		return
 	}
@@ -33,48 +34,63 @@ func (ctx *ConnContext) InitHandlerContext() {
 	ctx.Head.next = &ctx.Tail
 	ctx.Tail.pre = &ctx.Head
 
-	ctx.isInit = true
+	//add other handler context
+	for _, provider := range providers {
+		ctx.AddHandlerContext(provider())
+	}
 
-	ctx.AddHandler(&StdDataHandler{})
+	ctx.isInit = true
 }
 
 //AddHandler add handler to last(before tail)
 func (ctx *ConnContext) AddHandler(handler DataHandler) {
-	ctx.AddHandlerContext(&HandlerContext{
+	ctx.AddHandlerContext(HandlerContext{
 		handler: handler,
 	})
 }
 
 //AddHandlerContext add ctx to last(before tail)
-func (ctx *ConnContext) AddHandlerContext(handler *HandlerContext) {
-	if !ctx.isInit {
-		ctx.InitHandlerContext()
-	}
-
+func (ctx *ConnContext) AddHandlerContext(handler HandlerContext) {
 	tmp := ctx.Tail.pre
-	tmp.next = handler
+	tmp.next = &handler
 	handler.pre = tmp
 	handler.next = &ctx.Tail
-	ctx.Tail.pre = handler
+	ctx.Tail.pre = &handler
 }
 
-//HandlerContext wrap handlers with linklist
+//func (ctx *ConnContext) HandlerContextInitializer() func(apply ...Initializer) {
+//	return func(apply ...Initializer) {
+//		for _, h := range apply {
+//			ctx.AddHandlerContext(h())
+//		}
+//	}
+//}
+
+//HandlerContext wrap handlers as linklist node
 type HandlerContext struct {
 	handler   DataHandler
 	pre, next *HandlerContext
 }
 
-func (h *HandlerContext) Fire(ctx *ConnContext, pkg *datapack.TcpPackage) {
+func (h *HandlerContext) Fire(ctx *ConnContext, pkg datapack.Message) {
 	h.handler.Exec(ctx, pkg)
 	if h.next != nil {
 		h.next.Fire(ctx, pkg)
 	}
 }
 
-type HandlerContextInitializer struct {
 
+//Initializer handlerContext provider
+type Initializer func() HandlerContext
+
+func DispatchHandlerContextFunc() HandlerContext {
+	//todo impl DispatchHandler replace StdDataHandler
+	return HandlerContext{handler: &StdDataHandler{}}
 }
 
-func (i *HandlerContextInitializer) Initializer(ctx ...HandlerContext) {
-
+func AckHandlerContextFunc() HandlerContext {
+	//todo impl AckHandler replace StdDataHandler
+	return HandlerContext{handler: &StdDataHandler{}}
 }
+
+
