@@ -5,15 +5,15 @@
 
 ### 一、项目结构
 
-```json
+```plain
 ./camellia
 ├── client
-├── config            //configs
+├── config          //configs
 ├── core
-│    ├── channel      //context chain
-│    ├── datapack     //数据包处理
+│    ├── channel    //context chain
+│    ├── datapack   //数据包处理
 │    └── format
-├── protocol          //pb文件
+├── protocol        //pb文件
 ├── pb_generate
 ├── server
 ├── static
