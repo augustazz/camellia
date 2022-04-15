@@ -3,21 +3,13 @@ package core
 import (
 	"camellia/core/channel"
 	"camellia/core/datapack"
+	"camellia/core/enums"
 	"fmt"
 	"io"
 	"net"
-	"sync"
 	"time"
 )
 
-
-var connections = struct {
-	cache map[uint64]*Connection
-	lock  sync.Mutex
-}{
-	cache: make(map[uint64]*Connection),
-	lock:  sync.Mutex{},
-}
 
 type Connection struct {
 	Id   uint64
@@ -37,9 +29,7 @@ func NewConnection(id uint64, conn *net.Conn) *Connection {
 		recvChan:   make(chan datapack.Message, 512),
 		writeChan: make(chan []byte, 512),
 	}
-	c.Ctx = &channel.ConnContext{WriteChan: c.writeChan}
-	//init default and handlerContext
-	c.Ctx.InitHandlerContext(channel.DispatchHandlerContextFunc)
+	c.Ctx = &channel.ConnContext{WriteChan: c.writeChan, State: enums.ConnStateInit}
 
 	go c.startWriteHandler()
 	go c.startMsgHandler()
@@ -110,19 +100,6 @@ func (c *Connection) startWriteHandler() {
 }
 
 
-
 func (c *Connection) Push(msg []byte) {
 	c.writeChan<- msg
-}
-
-func RegisterToManager(conn *Connection) *Connection {
-	connections.lock.Lock()
-	defer connections.lock.Unlock()
-
-	old, ok := connections.cache[conn.Id]
-	if ok && conn.Id == old.Id {
-		return nil
-	}
-	connections.cache[conn.Id] = conn
-	return old
 }

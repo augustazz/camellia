@@ -2,6 +2,11 @@ package server
 
 import (
 	"camellia/core"
+	"camellia/core/channel"
+	"camellia/core/datapack"
+	"camellia/core/event"
+	"camellia/core/util"
+	pb "camellia/pb_generate"
 	"fmt"
 	"log"
 	"net"
@@ -22,6 +27,7 @@ func (s *Server) Start() {
 	//})
 	checkErr(err, "listen err", true)
 	fmt.Println("start success, port: ", s.Port)
+	event.Initialize()
 
 	for {
 		var conn net.Conn
@@ -35,12 +41,27 @@ func (s *Server) Start() {
 func dealConn(conn *net.Conn) {
 	clientId := id
 	c := core.NewConnection(clientId, conn)
-	old := core.RegisterToManager(c)
+	//init and add handlerContext
+	c.Ctx.InitHandlerContext(channel.AuthHandlerFunc, channel.DispatchHandlerFunc)
+
+	old := c.ConnActive()
 	if old != nil {
 		log.Println("dup conn, stop old:", old.Id)
-		err := old.Close()
-		checkErr(err, "close old conn err", false)
+		//kick out
+		if err := old.Close(); err != nil {
+			log.Println("dup conn err, stop old:", old.Id, err.Error())
+		}
 	}
+
+	//resp auth msg
+	msg := datapack.NewPbMessage()
+	msg.Header.MsgType = pb.MsgType_MsgTypeAuthLaunch
+	s := util.RandBytes(64)
+	msg.PayloadPb = &pb.SimplePayload{
+		Content: s,
+	}
+	c.Ctx.RandomStr = string(s)
+	c.Ctx.WriteChan <- (&datapack.TcpPackage{}).Pack(msg)
 
 	go c.ReadLoop()
 }

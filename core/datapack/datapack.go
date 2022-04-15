@@ -124,16 +124,12 @@ func (pkg *TcpPackage) UnPackFrameData(data []byte) {
 	//checkErr(err, "write payload err")
 }
 
-//GetMessage header解析成pb message，payload不解析，交给业务处理
+//GetMessage TcpPackage --> Message
 func (pkg *TcpPackage) GetMessage() Message {
-	//var err error
-	//flag := pkg.flag
-	//pb
-	dp := NewPbMessageHeader()
-
-	dp.DeserializeHeader(pkg.dataPack[:pkg.headerLen])
-	dp.Payload = pkg.dataPack[pkg.headerLen:]
-	return dp
+	msg := NewPbMessageHeader()
+	msg.DeserializeHeader(pkg.dataPack[:pkg.headerLen])
+	msg.Payload = pkg.dataPack[pkg.headerLen:]
+	return msg
 }
 
 
@@ -146,6 +142,8 @@ type Message interface {
 	SerializePayload() []byte
 
 	DeserializeHeader([]byte)
+
+	GetHeader() *pb.Header
 	GetPayload() []byte
 
 	//GetMessageHeader()
@@ -193,14 +191,14 @@ func (m *PbMessage) DeserializeHeader(b []byte) {
 	checkErr(err, "unmarshal header err")
 }
 
+func (m *PbMessage) GetHeader() *pb.Header {
+	return m.Header
+}
 
 func (m *PbMessage) GetPayload() []byte {
 	return m.Payload
 }
 
-func GetSerializeFlag(flag uint8) pb.SerializeFlag {
-	return 0
-}
 
 func checkErr(err error, ifErr string) {
 	if err != nil {
