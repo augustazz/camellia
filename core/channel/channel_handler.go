@@ -2,77 +2,102 @@ package channel
 
 import (
 	"camellia/core/datapack"
+	"camellia/core/enums"
+	"camellia/core/event"
+	"camellia/core/util"
 	pb "camellia/pb_generate"
 	"fmt"
 	"github.com/golang/protobuf/proto"
 )
 
-type DataHandler interface {
-	Exec(ctx *ConnContext, pkg datapack.Message)
-	Match(ctx *ConnContext, pkg datapack.Message) bool
-}
 
-type AuthDataHandler struct {
-}
+//type handlerFunc func (ctx *ConnContext, msg datapack.Message)
+//wrapped by HandlerContext
 
-func (h *AuthDataHandler) Exec(ctx *ConnContext, pkg datapack.Message) {
-
-}
-
-type HeadDataHandler struct {}
-type TailDataHandler struct {}
-type StdDataHandler struct{}
-
-
-func (h *HeadDataHandler) Exec(ctx *ConnContext, msg datapack.Message) {
+//HeadDataHandlerFunc head
+func HeadDataHandlerFunc(ctx *ConnContext, msg datapack.Message) {
 	fmt.Println("head in")
 }
 
-func (h *HeadDataHandler) Match(ctx *ConnContext, msg datapack.Message) bool {
-	return true
-}
-
-func (h *TailDataHandler) Exec(ctx *ConnContext, msg datapack.Message) {
+//TailDataHandlerFunc tail
+func TailDataHandlerFunc(ctx *ConnContext, msg datapack.Message) {
 	fmt.Println("tail out")
 }
 
-func (h *TailDataHandler) Match(ctx *ConnContext, msg datapack.Message) bool {
-	return true
-}
+//AuthHandlerFunc server verify auth request
+func AuthHandlerFunc(ctx *ConnContext, msg datapack.Message) {
+	if msg.GetHeader().MsgType == pb.MsgType_MsgTypeAuthVerifyReq {
+		if ctx.State != enums.ConnStateInAuth {
+			event.PostEvent(event.EventTypeConnStatusChanged, ctx.State)
+			ctx.State = enums.ConnStateInAuth
+		}
 
-func (h *StdDataHandler) Exec(ctx *ConnContext, msg datapack.Message) {
-	pbMsg := msg.(*datapack.PbMessage)
+		var payload pb.SimplePayload
+		err := proto.Unmarshal(msg.GetPayload(), &payload)
+		if err != nil {
+			fmt.Println("err", err)
+			return
+		}
 
+		user := msg.GetHeader().UserInfo
+		if user == nil {
+			return
+		}
+		succ := verifySig(msg.GetHeader().UserInfo, ctx.RandomStr, payload.Content)
 
-	var payload pb.SimplePayload
-	err := proto.Unmarshal(msg.GetPayload(), &payload)
-	if err != nil {
-		fmt.Println("unmarshal payload fail, ", err)
+		code := pb.AuthCode_AuthFailure
+		if succ {
+			ctx.State = enums.ConnStateReady
+			code = pb.AuthCode_AuthSuccess
+		}
+
+		resp := datapack.NewPbMessage()
+		resp.Header.MsgType = pb.MsgType_MsgTypeAuthVerifyResp
+		resp.PayloadPb = &pb.AuthResp{
+			Code: code,
+		}
+		ctx.WriteChan<- (&datapack.TcpPackage{}).Pack(resp)
 		return
 	}
-	fmt.Println(pbMsg.Header.String(), payload.String())
 
-	if !pbMsg.Header.Ack {
-		return
+	//没验证通过时，数据丢弃
+	if ctx.State != enums.ConnStateReady {
+		ctx.Abort = true
 	}
-
-	resp := datapack.PbMessage{
-		Header: &pb.Header{
-			MsgType: 1,
-			MsgId:   pbMsg.Header.MsgId,
-		},
-		PayloadPb: &pb.SimplePayload{
-			Payload: []byte("success"),
-		},
-	}
-	pack := datapack.TcpPackage{}
-
-	ctx.WriteChan<- pack.Pack(&resp)
 }
 
-func (h *StdDataHandler) Match(ctx *ConnContext, msg datapack.Message) bool {
-	return true
+var msgProcessors map[pb.MsgType]func(datapack.Message)
+
+func DispatchHandlerFunc(ctx *ConnContext, msg datapack.Message) {
+	msgType := msg.GetHeader().MsgType
+	processor, ok := msgProcessors[msgType]
+	if !ok {
+		//if has default processor
+		processor, ok = msgProcessors[0]
+	}
+
+	if ok {
+		processor(msg)
+	} else {
+		fmt.Println("msg not impl processor")
+	}
 }
 
 
+func verifySig(user *pb.UserInfo, randomStr string, sig []byte) bool {
+	key:= util.GetPubRsaKey()
+	if key == nil {
+		fmt.Println("get key fail")
+		return false
+	}
+	uid := user.Uid
+	did := user.Did
+
+	content := make([]byte, 0, len(uid) + len(did) + len(randomStr))
+	content = append(content, []byte(uid)...)
+	content = append(content, []byte(did)...)
+	content = append(content, []byte(randomStr)...)
+
+	return util.RsaVerySignWithSha256(content, sig, key)
+}
 

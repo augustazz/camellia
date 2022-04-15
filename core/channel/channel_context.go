@@ -2,6 +2,7 @@ package channel
 
 import (
 	"camellia/core/datapack"
+	"camellia/core/enums"
 	"sync"
 )
 
@@ -9,14 +10,17 @@ type ConnContext struct {
 	isInit   bool
 	initLock sync.Mutex
 
-	WriteChan  chan<- []byte
+	State     enums.ConnState
+	WriteChan chan<- []byte
+	RandomStr string
 
 	//handler chain
+	Abort      bool //中断传递
 	Head, Tail HandlerContext
 }
 
 //InitHandlerContext init default and handlerContext Initializer provider func
-func (ctx *ConnContext) InitHandlerContext(providers ...Initializer) {
+func (ctx *ConnContext) InitHandlerContext(handlers ...func(ctx *ConnContext, msg datapack.Message)) {
 	if ctx.isInit {
 		return
 	}
@@ -28,24 +32,24 @@ func (ctx *ConnContext) InitHandlerContext(providers ...Initializer) {
 		return
 	}
 
-	ctx.Head = HandlerContext{handler: &HeadDataHandler{}}
-	ctx.Tail = HandlerContext{handler: &TailDataHandler{}}
+	ctx.Head = HandlerContext{Handler: HeadDataHandlerFunc}
+	ctx.Tail = HandlerContext{Handler: TailDataHandlerFunc}
 
 	ctx.Head.next = &ctx.Tail
 	ctx.Tail.pre = &ctx.Head
 
 	//add other handler context
-	for _, provider := range providers {
-		ctx.AddHandlerContext(provider())
+	for _, handler := range handlers {
+		ctx.AddHandler(handler)
 	}
 
 	ctx.isInit = true
 }
 
 //AddHandler add handler to last(before tail)
-func (ctx *ConnContext) AddHandler(handler DataHandler) {
+func (ctx *ConnContext) AddHandler(handlerFunc func(ctx *ConnContext, msg datapack.Message)) {
 	ctx.AddHandlerContext(HandlerContext{
-		handler: handler,
+		Handler: handlerFunc,
 	})
 }
 
@@ -68,29 +72,21 @@ func (ctx *ConnContext) AddHandlerContext(handler HandlerContext) {
 
 //HandlerContext wrap handlers as linklist node
 type HandlerContext struct {
-	handler   DataHandler
+	Handler func(ctx *ConnContext, msg datapack.Message)
 	pre, next *HandlerContext
 }
 
-func (h *HandlerContext) Fire(ctx *ConnContext, pkg datapack.Message) {
-	h.handler.Exec(ctx, pkg)
+func (h *HandlerContext) Fire(ctx *ConnContext, msg datapack.Message) {
+	//if abort且不是tai节点， 直接传给下一个，h.next==nil表示tail
+	if ctx.Abort && h.next != nil {
+		h.next.Fire(ctx, msg)
+	}
+
+	//执行func
+	h.Handler(ctx, msg)
+
+	//传递
 	if h.next != nil {
-		h.next.Fire(ctx, pkg)
+		h.next.Fire(ctx, msg)
 	}
 }
-
-
-//Initializer handlerContext provider
-type Initializer func() HandlerContext
-
-func DispatchHandlerContextFunc() HandlerContext {
-	//todo impl DispatchHandler replace StdDataHandler
-	return HandlerContext{handler: &StdDataHandler{}}
-}
-
-func AckHandlerContextFunc() HandlerContext {
-	//todo impl AckHandler replace StdDataHandler
-	return HandlerContext{handler: &StdDataHandler{}}
-}
-
-
