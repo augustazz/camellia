@@ -37,29 +37,39 @@ enum MsgType {
   MsgTypeAckClient = 0x100;
   MsgTypeKickOut = 0x102;
 
+  //-----heartbeat----
+  MsgTypeHeartbeatDown = 0x104;
+
+  //-----auth----
+  MsgTypeAuthLaunch = 0x106;
+  MsgTypeAuthVerifyResp = 0x108;
+
+  //thing
+  MsgTypePropEmit = 0x120;
+
+
+  MsgTypeClientMax = 0x2FF;
 
 
 
   //server msg
+    MsgTypeServerMin = 0x300;
   //-----heartbeat----
-  MsgTypeHeartbeatUp = 0x200;
-  MsgTypeHeartbeatDown = 0x201;
+  MsgTypeHeartbeatUp = 0x301;
   //-----auth----
-  MsgTypeAuthUp = 0x202;
-  MsgTypeAuthDown = 0x203;
-  MsgTypeAuthVerifyUp = 0x204;
-  MsgTypeAuthVerifyDown = 0x205;
+  MsgTypeAuthVerifyReq = 0x303;
 
 
 
   //client ack to server
-  MsgTypeAckServer = 0x2FD;
+  MsgTypeAckServer = 0x3FD;
 
-  MsgTypeServerMax = 0x2FF;
+
+  //thing
+  MsgTypePropUpload = 0x401;
+  MsgTypePropPullReq = 0x403;
+
   //server msg end
-
-
-
 
 }
 
@@ -72,15 +82,21 @@ message Header {
   bool ack = 8; //是否进行应答，确认消息收到
 }
 
+enum ContentType {
+  pb = 0;
+  plain = 1;
+  json = 2;
+}
+
 message SimplePayload {
-  bytes payload = 1;
+  bytes content = 1;
 }
 
 
 
 message UserInfo {
-  uint64 uid = 1; //用户id
-  uint64 did = 2; //设备id
+  string uid = 1; //用户id
+  string did = 2; //设备id
   ClientType clientType = 3;
   string clientVer = 4;
 }
@@ -95,6 +111,10 @@ message PropUpload {
 
 message AuthReq {
   string sig = 1;
+}
+
+message AuthResp {
+    AuthCode code = 1;
 }
 
 
