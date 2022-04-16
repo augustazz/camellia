@@ -132,7 +132,6 @@ func (pkg *TcpPackage) GetMessage() Message {
 	return msg
 }
 
-
 //------------Message-----------
 
 //Message 消息数据
@@ -152,7 +151,7 @@ type Message interface {
 }
 
 type PbMessage struct {
-	Header *pb.Header
+	HeaderPb *pb.Header
 
 	Payload   []byte
 	PayloadPb proto.Message
@@ -160,13 +159,13 @@ type PbMessage struct {
 
 func NewPbMessageHeader() *PbMessage {
 	return &PbMessage{
-		Header:  &pb.Header{},
+		HeaderPb: &pb.Header{},
 	}
 }
 
 func NewPbMessage() *PbMessage {
 	return &PbMessage{
-		Header:  &pb.Header{},
+		HeaderPb: &pb.Header{},
 	}
 }
 
@@ -175,7 +174,7 @@ func (m *PbMessage) SerializeFlag() uint8 {
 }
 
 func (m *PbMessage) SerializeHeader() []byte {
-	h, err := proto.Marshal(m.Header)
+	h, err := proto.Marshal(m.HeaderPb)
 	checkErr(err, "marshal header err")
 	return h
 }
@@ -187,18 +186,17 @@ func (m *PbMessage) SerializePayload() []byte {
 }
 
 func (m *PbMessage) DeserializeHeader(b []byte) {
-	err := proto.Unmarshal(b, m.Header)
+	err := proto.Unmarshal(b, m.HeaderPb)
 	checkErr(err, "unmarshal header err")
 }
 
 func (m *PbMessage) GetHeader() *pb.Header {
-	return m.Header
+	return m.HeaderPb
 }
 
 func (m *PbMessage) GetPayload() []byte {
 	return m.Payload
 }
-
 
 func checkErr(err error, ifErr string) {
 	if err != nil {

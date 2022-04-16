@@ -52,7 +52,7 @@ func AuthHandlerFunc(ctx *ConnContext, msg datapack.Message) {
 		}
 
 		resp := datapack.NewPbMessage()
-		resp.Header.MsgType = pb.MsgType_MsgTypeAuthVerifyResp
+		resp.HeaderPb.MsgType = pb.MsgType_MsgTypeAuthVerifyResp
 		resp.PayloadPb = &pb.AuthResp{
 			Code: code,
 		}

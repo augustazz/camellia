@@ -39,7 +39,7 @@ func write(conn *core.Connection) {
 			continue
 		}
 		msg := datapack.PbMessage{
-			Header: &pb.Header{
+			HeaderPb: &pb.Header{
 				MsgType: pb.MsgType_MsgTypePropUpload,
 				MsgId:   counter,
 				Ack: true,

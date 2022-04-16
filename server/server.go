@@ -55,7 +55,7 @@ func dealConn(conn *net.Conn) {
 
 	//resp auth msg
 	msg := datapack.NewPbMessage()
-	msg.Header.MsgType = pb.MsgType_MsgTypeAuthLaunch
+	msg.HeaderPb.MsgType = pb.MsgType_MsgTypeAuthLaunch
 	s := util.RandBytes(64)
 	msg.PayloadPb = &pb.SimplePayload{
 		Content: s,
