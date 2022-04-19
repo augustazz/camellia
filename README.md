@@ -127,7 +127,7 @@ type ConnContext struct {
 
 //HandlerContext wrap handlers as linklist node
 type HandlerContext struct {
-	handler   DataHandler
+	Handler   func (ctx *ConnContext, msg datapack.Message)
 	pre, next *HandlerContext
 }
 
