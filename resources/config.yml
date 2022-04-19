@@ -1,0 +1,8 @@
+app:
+  name: camellia
+web:
+  port: 9090
+
+log:
+  debug: true
+  path: ./logs

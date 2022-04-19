@@ -5,9 +5,10 @@ import (
 	"camellia/core/enums"
 	"camellia/core/event"
 	"camellia/core/util"
+	"camellia/logger"
 	pb "camellia/pb_generate"
-	"fmt"
 	"github.com/golang/protobuf/proto"
+	"time"
 )
 
 
@@ -16,12 +17,13 @@ import (
 
 //HeadDataHandlerFunc head
 func HeadDataHandlerFunc(ctx *ConnContext, msg datapack.Message) {
-	fmt.Println("head in")
+	ctx.LastReadTime = time.Now()
+	logger.Info("head in")
 }
 
 //TailDataHandlerFunc tail
 func TailDataHandlerFunc(ctx *ConnContext, msg datapack.Message) {
-	fmt.Println("tail out")
+	logger.Info("tail out")
 }
 
 //AuthHandlerFunc server verify auth request
@@ -35,7 +37,7 @@ func AuthHandlerFunc(ctx *ConnContext, msg datapack.Message) {
 		var payload pb.SimplePayload
 		err := proto.Unmarshal(msg.GetPayload(), &payload)
 		if err != nil {
-			fmt.Println("err", err)
+			logger.Info("err", err)
 			return
 		}
 
@@ -79,7 +81,7 @@ func DispatchHandlerFunc(ctx *ConnContext, msg datapack.Message) {
 	if ok {
 		processor(msg)
 	} else {
-		fmt.Println("msg not impl processor")
+		logger.Warning("msg not impl processor")
 	}
 }
 
@@ -87,7 +89,7 @@ func DispatchHandlerFunc(ctx *ConnContext, msg datapack.Message) {
 func verifySig(user *pb.UserInfo, randomStr string, sig []byte) bool {
 	key:= util.GetPubRsaKey()
 	if key == nil {
-		fmt.Println("get key fail")
+		logger.Warning("get key fail")
 		return false
 	}
 	uid := user.Uid

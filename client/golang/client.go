@@ -2,20 +2,34 @@ package main
 
 import (
 	"camellia/client/golang/handler"
+	"camellia/config"
 	"camellia/core"
 	"camellia/core/datapack"
 	"camellia/core/enums"
 	"camellia/core/event"
+	"camellia/logger"
 	pb "camellia/pb_generate"
-	"log"
 	"net"
 	"time"
 )
 
 func main() {
+	//init logger
+	//init logger
+	//setup logger
+	conf := config.LogConfig{
+		Debug: true,
+		Path: "./logs/client",
+
+	}
+	logger.SetupLogger("camellia-client", conf)
+
+
+	logger.Info("start tcp dial")
+
 	conn, err := net.Dial("tcp4", "127.0.0.1:9090")
 	if err != nil {
-		log.Fatalln(err)
+		logger.Fatal(err)
 	}
 
 	event.Initialize()
@@ -54,11 +68,5 @@ func write(conn *core.Connection) {
 		conn.Push(pack.Pack(&msg))
 		counter++
 		time.Sleep(time.Second * 2)
-	}
-}
-
-func checkErr(err error, ifErr string) {
-	if err != nil {
-		log.Fatal(ifErr, err)
 	}
 }

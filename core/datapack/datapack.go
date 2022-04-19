@@ -2,10 +2,10 @@ package datapack
 
 import (
 	"bytes"
+	"camellia/logger"
 	pb "camellia/pb_generate"
 	"encoding/binary"
 	"github.com/golang/protobuf/proto"
-	"log"
 )
 
 const (
@@ -46,14 +46,14 @@ func (pkg *TcpPackage) Pack(data Message) []byte {
 	var err error
 	err = binary.Write(&buf, binary.BigEndian, uint16(pb.Constants_Magic))
 	if err != nil {
-		log.Fatal("write err", err)
+		logger.Fatal("write err", err)
 	}
 
 	//flag
 	var flag = data.SerializeFlag() // |
 	err = binary.Write(&buf, binary.BigEndian, flag)
 	if err != nil {
-		log.Fatal("write err", err)
+		logger.Fatal("write err", err)
 	}
 
 	header := data.SerializeHeader()
@@ -200,6 +200,6 @@ func (m *PbMessage) GetPayload() []byte {
 
 func checkErr(err error, ifErr string) {
 	if err != nil {
-		log.Fatal(ifErr, err)
+		logger.Fatal(ifErr, err)
 	}
 }

@@ -4,7 +4,7 @@ import (
 	"camellia/core/channel"
 	"camellia/core/datapack"
 	"camellia/core/enums"
-	"fmt"
+	"camellia/logger"
 	"io"
 	"net"
 	"time"
@@ -42,7 +42,7 @@ func (c *Connection) Close() error {
 
 	delete(connections.cache, c.Id)
 
-	fmt.Println("close conn: ", c.Id)
+	logger.Info("close conn: ", c.Id)
 	return (*c.conn).Close()
 }
 
@@ -51,7 +51,7 @@ func (c *Connection) ReadLoop() {
 		frameHeader := make([]byte, datapack.FIXED_HEADER_LEN)
 		_, err := io.ReadFull(*c.conn, frameHeader)
 		if err != nil {
-			fmt.Println("read err", err)
+			logger.Error("read err", err)
 			if err == io.EOF {
 				break
 			}
@@ -61,14 +61,14 @@ func (c *Connection) ReadLoop() {
 		pack := datapack.TcpPackage{}
 		err = pack.UnPackFrameHeader(frameHeader)
 		if err != nil {
-			fmt.Println("unpack header err", err)
+			logger.Error("unpack header err", err)
 			continue
 		}
 
 		message := make([]byte, pack.MsgLen())
 		_, err = io.ReadFull(*c.conn, message)
 		if err != nil {
-			fmt.Println("unpack header err", err)
+			logger.Error("unpack header err: ", err)
 			continue
 		}
 		pack.UnPackFrameData(message)
@@ -94,7 +94,8 @@ func (c *Connection) startWriteHandler() {
 		select {
 		case msg := <-c.writeChan:
 			n, _ := (*c.conn).Write(msg)
-			fmt.Println("send msg byte: ", n)
+			c.Ctx.LastWriteTime = time.Now()
+			logger.Debug("send msg byte: ", n)
 		}
 	}
 }

@@ -5,8 +5,8 @@ import (
 	"camellia/core/datapack"
 	"camellia/core/enums"
 	"camellia/core/util"
+	"camellia/logger"
 	pb "camellia/pb_generate"
-	"fmt"
 	"github.com/golang/protobuf/proto"
 )
 
@@ -19,7 +19,7 @@ func ClientAuthHandlerFunc(ctx *channel.ConnContext, msg datapack.Message) {
 		var payload pb.SimplePayload
 		err := proto.Unmarshal(msg.GetPayload(), &payload)
 		if err != nil {
-			fmt.Println("err", err)
+			logger.Error(err)
 			return
 		}
 		origin := payload.Content
@@ -39,14 +39,14 @@ func ClientAuthHandlerFunc(ctx *channel.ConnContext, msg datapack.Message) {
 		var result pb.AuthResp
 		err := proto.Unmarshal(msg.GetPayload(), &result)
 		if err != nil {
-			fmt.Println("err", err)
+			logger.Error(err)
 			return
 		}
 		if result.Code == pb.AuthCode_AuthSuccess {
-			fmt.Println("auth success")
+			logger.Info("auth success")
 			ctx.State = enums.ConnStateReady
 		} else {
-			fmt.Println("auth fail")
+			logger.Info("auth fail")
 		}
 	}
 }
@@ -56,7 +56,7 @@ func ClientAuthHandlerFunc(ctx *channel.ConnContext, msg datapack.Message) {
 func encrypt(user *pb.UserInfo, origin []byte) []byte {
 	prvKey := util.GetPrvRsaKey()
 	if prvKey == nil {
-		fmt.Println("prvKey fail")
+		logger.Info("prvKey fail")
 		return nil
 	}
 
@@ -65,7 +65,7 @@ func encrypt(user *pb.UserInfo, origin []byte) []byte {
 	s = append(s, []byte(user.Uid)...)
 	s = append(s, []byte(user.Did)...)
 	s = append(s, origin...)
-	fmt.Println("content:", string(s))
+	logger.Debug("content:", string(s))
 	return util.RsaSignWithSha256(s, prvKey)
 }
 

@@ -6,9 +6,9 @@ import (
 	"camellia/core/datapack"
 	"camellia/core/event"
 	"camellia/core/util"
+	"camellia/logger"
 	pb "camellia/pb_generate"
 	"fmt"
-	"log"
 	"net"
 )
 
@@ -26,7 +26,7 @@ func (s *Server) Start() {
 	//	Port: s.Port,
 	//})
 	checkErr(err, "listen err", true)
-	fmt.Println("start success, port: ", s.Port)
+	logger.Info("start success, port: ", s.Port)
 	event.Initialize()
 
 	for {
@@ -46,10 +46,10 @@ func dealConn(conn *net.Conn) {
 
 	old := c.ConnActive()
 	if old != nil {
-		log.Println("dup conn, stop old:", old.Id)
+		logger.Info("dup conn, stop old:", old.Id)
 		//kick out
 		if err := old.Close(); err != nil {
-			log.Println("dup conn err, stop old:", old.Id, err.Error())
+			logger.Error("dup conn err, stop old:", old.Id, err.Error())
 		}
 	}
 
@@ -75,7 +75,7 @@ func checkErr(err error, ifErr string, throws bool) {
 		return
 	}
 	if throws {
-		log.Fatal(ifErr, err.Error())
+		logger.Fatal(ifErr, err.Error())
 	}
-	log.Println(ifErr, err)
+	logger.Info(ifErr, err)
 }

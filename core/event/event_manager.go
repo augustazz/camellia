@@ -1,6 +1,6 @@
 package event
 
-import "fmt"
+import "camellia/logger"
 
 type EventType uint16
 
@@ -61,7 +61,7 @@ func (m *EventManager) RegisterEventFunction(e EventType, function func(EventTyp
 
 func PostEvent(e EventType, param interface{}) {
 	if Inst == nil {
-		fmt.Println("event manager instance nil")
+		logger.Sugar.Warn("event manager instance nil")
 		return
 	}
 	if f, ok := Inst.events[e]; ok {

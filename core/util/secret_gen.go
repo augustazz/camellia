@@ -1,6 +1,7 @@
 package util
 
 import (
+	"camellia/logger"
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
@@ -27,7 +28,7 @@ const (
 func GetPrvRsaKey() []byte {
 	key, err := getRsaKey(secretFileName(secretPath, SecretKeyPrv))
 	if err != nil {
-		fmt.Println("dd")
+		logger.Error(err)
 		return nil
 	}
 	return key
@@ -36,7 +37,7 @@ func GetPrvRsaKey() []byte {
 func GetPubRsaKey() []byte {
 	key, err := getRsaKey(secretFileName(secretPath, SecretKeyPub))
 	if err != nil {
-		fmt.Println("dd")
+		logger.Error(err)
 		return nil
 	}
 	return key
@@ -86,13 +87,13 @@ func GenRsaKey(savePath string) {
 
 	err = ioutil.WriteFile(secretFileName(savePath, SecretKeyPrv), prvKey, 0644)
 	if err != nil {
-		fmt.Println("private key err", err)
+		logger.Error("private key err: ", err)
 		return
 	}
 
 	err = ioutil.WriteFile(secretFileName(savePath, SecretKeyPub), pubKey, 0644)
 	if err != nil {
-		fmt.Println("public key err", err)
+		logger.Error("public key err: ", err)
 		return
 	}
 }
@@ -108,7 +109,7 @@ func RsaSignWithSha256(data []byte, keyBytes []byte) []byte {
 	}
 	privateKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
 	if err != nil {
-		fmt.Println("ParsePKCS8PrivateKey err", err)
+		logger.Error("ParsePKCS8PrivateKey err: ", err)
 		panic(err)
 	}
 

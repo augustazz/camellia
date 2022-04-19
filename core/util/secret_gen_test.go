@@ -15,7 +15,6 @@ func TestGenKey(t *testing.T) {
 func TestRsaDecrypt(t *testing.T) {
 	//rsa 密钥文件产生
 	fmt.Println("-------------------------------获取RSA公私钥-----------------------------------------")
-
 	prvKey := GetPrvRsaKey()
 	if prvKey == nil {
 		fmt.Println("read err", )
