@@ -4,6 +4,7 @@ import (
 	"camellia/core/datapack"
 	"camellia/core/enums"
 	"sync"
+	"time"
 )
 
 type ConnContext struct {
@@ -17,6 +18,10 @@ type ConnContext struct {
 	//handler chain
 	Abort      bool //中断传递
 	Head, Tail HandlerContext
+
+	ConnectTime    time.Time
+	LastReadTime   time.Time
+	LastWriteTime  time.Time
 }
 
 //InitHandlerContext init default and handlerContext Initializer provider func
@@ -43,6 +48,7 @@ func (ctx *ConnContext) InitHandlerContext(handlers ...func(ctx *ConnContext, ms
 		ctx.AddHandler(handler)
 	}
 
+	ctx.ConnectTime = time.Now()
 	ctx.isInit = true
 }
 
@@ -72,7 +78,7 @@ func (ctx *ConnContext) AddHandlerContext(handler HandlerContext) {
 
 //HandlerContext wrap handlers as linklist node
 type HandlerContext struct {
-	Handler func(ctx *ConnContext, msg datapack.Message)
+	Handler   func(ctx *ConnContext, msg datapack.Message)
 	pre, next *HandlerContext
 }
 
