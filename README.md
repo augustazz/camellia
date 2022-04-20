@@ -3,7 +3,14 @@
 
 <img src="resources/static/images/logo.png" alt="山茶花" width="150" height="150" align="bottom" />
 
-### 一、项目结构
+### 一、Overview
+camellia是一个***长连接服务*** 脚手架，提供了基础的网络和消息处理封装，pipeline式的消息处理可以方便地继续拓展业务逻辑。
+- 灵活的自定义协议处理tcp网络粘包拆包
+- 默认使用protobuf作为序列化方式，可拓展
+- 内置连接认证、连接状态管理，同时可自定义消息处理函数应对不同业务数据
+- 支持按事件驱动的异步业务处理
+
+### 二、项目结构
 
 ```plain
 ./camellia
@@ -25,7 +32,7 @@
 ├── go.mod
 └── go.sum
 ```
-### 二、Quick Start
+### 三、Quick Start
 1. 生成pb代码
 ```shell
 - linux/macos
@@ -94,7 +101,7 @@ c.Ctx.InitHandlerContext(channel.AuthHandlerFunc, channel.ExampleHandlerFunc, ch
 # 此时会跳过后续非Tail的其他handlerFunc
 ```
 
-### 三、数据包定义
+### 四、数据包定义
 
 ```javascript
                                       Fixed Header (15 bytes)                                             Actual Content
@@ -105,7 +112,7 @@ content     |   0xC0C0  |  version+serialize flag  |     uint32  |   uint64     
             +-----------+--------------------------+-------------+--------------+      +-----------------------+-------------------------------+
 ```
 
-### 四、context和handler
+### 五、context和handler
 - context包装handler构成chain链表的一个node
 - 每个context包含pre context和next context的引用
 - 固定有一个HeadContext和一个TailContext
@@ -133,5 +140,5 @@ type HandlerContext struct {
 
 ```
 
-### 五、数据包处理
+### 六、数据包处理
 ![img.png](resources/static/images/datapack.png)
