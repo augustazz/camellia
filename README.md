@@ -20,11 +20,15 @@ camellia是一个***长连接服务*** 脚手架，提供了基础的网络和�
 │    ├── channel    //context chain
 │    ├── datapack   //数据包处理
 │    └── format
+├── logger
 ├── protocol        //pb文件
 ├── pb_generate
 ├── server
-├── static
-│     └── images
+├── web
+├── resources
+│     ├── config.yml
+│     └── static
+│          └── images
 ├── main.go
 ├── LICENSE
 ├── Makefile
