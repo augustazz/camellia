@@ -1,19 +1,14 @@
 package event
 
-import "camellia/logger"
-
-type EventType uint16
-
-const (
-	EventTypeConnActive EventType = iota
-	EventTypeConnStatusChanged EventType = iota
+import (
+	"camellia/logger"
 )
 
 var Inst *EventManager
 
 type EventManager struct {
 	taskBuffer chan eventTask
-	events map[EventType]func(EventType, interface{})  //事件处理集合 type-func
+	events     map[EventType]func(EventType, interface{}) //事件处理集合 type-func
 }
 
 type eventTask struct {
@@ -32,11 +27,14 @@ func (t eventTask) apply() {
 func Initialize() *EventManager {
 	Inst = &EventManager{
 		taskBuffer: make(chan eventTask, 512),
-		events: make(map[EventType]func(EventType, interface{})),
+		events:     make(map[EventType]func(EventType, interface{})),
 	}
 
 	//注册事件处理函数
-	Inst.RegisterEventFunction(EventTypeConnActive, ConnActiveEventFunc)
+	Inst.RegisterEventFunction(map[EventType]func(EventType, interface{}){
+		EventTypeConnActive:        ConnActiveEventFunc,
+		EventTypeConnStatusChanged: ConnStateChangeEventFunc,
+	})
 
 	go func() {
 		for task := range Inst.taskBuffer {
@@ -48,34 +46,34 @@ func Initialize() *EventManager {
 	return Inst
 }
 
-func (m *EventManager) RegisterEventFunction(e EventType, function func(EventType, interface{})) {
-	m.events[e] = function
+func (m *EventManager) RegisterEventFunction(eventFunc map[EventType]func(EventType, interface{})) {
+	for k, v := range eventFunc {
+		m.events[k] = v
+	}
 }
-
-
-
-
-
-
-
 
 func PostEvent(e EventType, param interface{}) {
 	if Inst == nil {
-		logger.Sugar.Warn("event manager instance nil")
+		logger.Warning("event manager instance nil")
 		return
 	}
 	if f, ok := Inst.events[e]; ok {
 		t := eventTask{
-			e: e,
+			e:     e,
 			param: param,
-			f: f,
+			f:     f,
 		}
-		Inst.taskBuffer<- t
+		Inst.taskBuffer <- t
 	}
 }
 
-
-
 func ConnActiveEventFunc(e EventType, f interface{}) {
+
+}
+
+func ConnStateChangeEventFunc(e EventType, f interface{}) {
+	if d, ok := f.(ConnStatusChanged); ok {
+		logger.Info("conn state changed: ", d)
+	}
 
 }
