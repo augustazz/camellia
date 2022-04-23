@@ -17,8 +17,16 @@ import (
 
 //HeadDataHandlerFunc head
 func HeadDataHandlerFunc(ctx *ConnContext, msg datapack.Message) {
+	logger.Debug("head in")
+
+	fail := checkMsg(msg)
+	if fail != nil {
+		logger.Warning("decode msg is invalid,reason: ", fail.Error())
+		ctx.Abort = true
+		return
+	}
+
 	ctx.LastReadTime = time.Now()
-	logger.Info("head in")
 }
 
 //TailDataHandlerFunc tail
@@ -28,7 +36,18 @@ func TailDataHandlerFunc(ctx *ConnContext, msg datapack.Message) {
 
 //AuthHandlerFunc server verify auth request
 func AuthHandlerFunc(ctx *ConnContext, msg datapack.Message) {
-	if msg.GetHeader().MsgType == pb.MsgType_MsgTypeAuthVerifyReq {
+	header := msg.GetHeader()
+	user := header.UserInfo
+
+	if ctx.Key == "" {
+		k := user.Uid
+		if k == "" {
+			k = user.Did
+		}
+		ctx.Key = k
+	}
+
+	if header.MsgType == pb.MsgType_MsgTypeAuthVerifyReq {
 		if ctx.State != enums.ConnStateInAuth {
 			event.PostEvent(event.EventTypeConnStatusChanged, ctx.State)
 			ctx.State = enums.ConnStateInAuth
@@ -41,12 +60,7 @@ func AuthHandlerFunc(ctx *ConnContext, msg datapack.Message) {
 			return
 		}
 
-		user := msg.GetHeader().UserInfo
-		if user == nil {
-			return
-		}
-		succ := verifySig(msg.GetHeader().UserInfo, ctx.RandomStr, payload.Content)
-
+		succ := verifySig(user, ctx.RandomStr, payload.Content)
 		code := pb.AuthCode_AuthFailure
 		if succ {
 			ctx.State = enums.ConnStateReady
@@ -101,5 +115,23 @@ func verifySig(user *pb.UserInfo, randomStr string, sig []byte) bool {
 	content = append(content, []byte(randomStr)...)
 
 	return util.RsaVerySignWithSha256(content, sig, key)
+}
+
+func checkMsg(msg datapack.Message) error {
+	if msg == nil {
+		return enums.MsgValidateErrEmpty
+	}
+	h := msg.GetHeader()
+	if h == nil {
+		return enums.MsgValidateErrHeaderEmpty
+	}
+	if h.MsgType == 0 {
+		return enums.MsgValidateErrMsgTypeEmpty
+	}
+	if h.GetUserInfo() == nil {
+		return enums.MsgValidateErrUserInfoEmpty
+	}
+
+	return nil
 }
 
