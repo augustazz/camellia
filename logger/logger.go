@@ -2,6 +2,7 @@ package logger
 
 import (
 	"camellia/config"
+	"context"
 	"fmt"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -15,7 +16,7 @@ var Sugar *zap.SugaredLogger
 
 var defaultLogPath = "./logs"
 
-func SetupLogger(appName string, conf config.LogConfig) func() {
+func SetupLogger(ctx context.Context, appName string, conf config.LogConfig) func() {
 	hook := lumberjack.Logger{
 		Filename:   buildFileName(conf.Path, appName), // 日志文件路径
 		MaxSize:    5 * 1024,                             // 每个日志文件保存的最大尺寸 单位：M

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"context"
 	"fmt"
 	"gopkg.in/yaml.v3"
 	"io/ioutil"
@@ -10,7 +11,7 @@ import (
 )
 
 type Config interface {
-	LoadConfig(profiles, path string)
+	LoadConfig(ctx context.Context, profiles, path string)
 	GetConfig() Config
 }
 
@@ -36,7 +37,7 @@ type LogConfig struct {
 }
 
 //LoadConfig load yml config,if has profiles,load after default file,same config item will be rewrite
-func (c *ServerConfig) LoadConfig(profiles, path string) {
+func (c *ServerConfig) LoadConfig(ctx context.Context, profiles, path string) {
 	if !isYamlFileConfig(path) {
 		log.Fatalln("not support file: ", path)
 		return

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"camellia/client/golang/handler"
 	"camellia/config"
 	"camellia/core"
 	"camellia/core/datapack"
@@ -35,7 +34,7 @@ func main() {
 	event.Initialize()
 	c := core.NewConnection(0, &conn)
 	//init and add handlerContext
-	c.Ctx.InitHandlerContext(handler.ClientAuthHandlerFunc)
+	c.Ctx.InitHandlerContext(/*handler.ClientAuthHandlerFunc*/)
 
 	go write(c)
 

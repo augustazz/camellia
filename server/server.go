@@ -8,14 +8,21 @@ import (
 	"camellia/core/util"
 	"camellia/logger"
 	pb "camellia/pb_generate"
+	"context"
 	"fmt"
 	"net"
+	"time"
 )
 
 var id uint64
 
 type Server struct {
+	connManager *core.ConnManager
+
+	Ctx context.Context
 	Port int
+	AuthTimeout time.Duration //认证超时时间 秒
+	IdleTimeout time.Duration //连接无数据传输超时时间 分钟
 }
 
 func (s *Server) Start() {
@@ -28,42 +35,58 @@ func (s *Server) Start() {
 	checkErr(err, "listen err", true)
 	logger.Info("start success, port: ", s.Port)
 	event.Initialize()
+	s.connManager = core.NewConnManager()
 
+	s.listenConn(listener)
+}
+
+func (s *Server) Close() {
+	s.connManager.Close()
+}
+
+func (s *Server) listenConn(listener net.Listener) {
 	for {
 		var conn net.Conn
+		var err error
 		conn, err = listener.Accept()
 		checkErr(err, "listen err", false)
-		dealConn(&conn)
+		c := newConnection(&conn)
+		s.connManager.RegisterToManager(s.AuthTimeout, s.IdleTimeout, c)
+
+		//resp auth msg
+		msg := datapack.NewPbMessage()
+		msg.HeaderPb.MsgType = pb.MsgType_MsgTypeAuthLaunch
+		randomStr := util.RandBytes(64)
+		msg.PayloadPb = &pb.SimplePayload{
+			Content: randomStr,
+		}
+		c.Ctx.RandomStr = string(randomStr)
+		c.Ctx.WriteChan <- (&datapack.TcpPackage{}).Pack(msg)
+
+		go c.ReadLoop()
+
 		id++
 	}
 }
 
-func dealConn(conn *net.Conn) {
+func newConnection(conn *net.Conn) *core.Connection {
 	clientId := id
 	c := core.NewConnection(clientId, conn)
 	//init and add handlerContext
 	c.Ctx.InitHandlerContext(channel.AuthHandlerFunc, channel.DispatchHandlerFunc)
 
-	old := c.ConnActive()
-	if old != nil {
-		logger.Info("dup conn, stop old:", old.Id)
-		//kick out
-		if err := old.Close(); err != nil {
-			logger.Error("dup conn err, stop old:", old.Id, err.Error())
-		}
-	}
+	//post event
+	event.PostEvent(event.EventTypeConnActive, "")
 
-	//resp auth msg
-	msg := datapack.NewPbMessage()
-	msg.HeaderPb.MsgType = pb.MsgType_MsgTypeAuthLaunch
-	s := util.RandBytes(64)
-	msg.PayloadPb = &pb.SimplePayload{
-		Content: s,
-	}
-	c.Ctx.RandomStr = string(s)
-	c.Ctx.WriteChan <- (&datapack.TcpPackage{}).Pack(msg)
-
-	go c.ReadLoop()
+	return c
+	//old := c.ConnActive()
+	//if old != nil {
+	//	logger.Info("dup conn, stop old:", old.Id)
+	//	//kick out
+	//	if err := old.Close("kick out"); err != nil {
+	//		logger.Error("dup conn err, stop old:", old.Id, err.Error())
+	//	}
+	//}
 }
 
 func (s *Server) stop() error {
