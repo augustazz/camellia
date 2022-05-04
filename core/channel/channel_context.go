@@ -11,6 +11,8 @@ type ConnContext struct {
 	isInit   bool
 	initLock sync.Mutex
 
+	//core.Connection info
+	Key       string
 	State     enums.ConnState
 	WriteChan chan<- []byte
 	RandomStr string
@@ -19,9 +21,9 @@ type ConnContext struct {
 	Abort      bool //中断传递
 	Head, Tail HandlerContext
 
-	ConnectTime    time.Time
-	LastReadTime   time.Time
-	LastWriteTime  time.Time
+	ConnectTime   time.Time
+	LastReadTime  time.Time
+	LastWriteTime time.Time
 }
 
 //InitHandlerContext init default and handlerContext Initializer provider func
