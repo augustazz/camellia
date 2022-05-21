@@ -5,14 +5,12 @@ import (
 	"net/http"
 )
 
-func StartWebService() {
+func StartWebServer() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/ping", ping)
 
 	logger.Fatal(http.ListenAndServe(":8080", mux))
 }
-
-
 
 //http handle func
 func ping(writer http.ResponseWriter, request *http.Request) {

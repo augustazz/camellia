@@ -4,13 +4,14 @@ import (
 	"camellia/core/datapack"
 	"camellia/core/enums"
 	"camellia/core/event"
+	"camellia/core/processor"
 	"camellia/core/util"
 	"camellia/logger"
 	pb "camellia/pb_generate"
+	"context"
 	"github.com/golang/protobuf/proto"
 	"time"
 )
-
 
 //type handlerFunc func (ctx *ConnContext, msg datapack.Message)
 //wrapped by HandlerContext
@@ -72,7 +73,7 @@ func AuthHandlerFunc(ctx *ConnContext, msg datapack.Message) {
 		resp.PayloadPb = &pb.AuthResp{
 			Code: code,
 		}
-		ctx.WriteChan<- (&datapack.TcpPackage{}).Pack(resp)
+		ctx.WriteChan <- (&datapack.TcpPackage{}).Pack(resp)
 		return
 	}
 
@@ -82,26 +83,19 @@ func AuthHandlerFunc(ctx *ConnContext, msg datapack.Message) {
 	}
 }
 
-var msgProcessors map[pb.MsgType]func(datapack.Message)
+func DispatchHandlerFunc(connCtx *ConnContext, msg datapack.Message) {
+	p := processor.GetProcessor(msg.GetHeader())
 
-func DispatchHandlerFunc(ctx *ConnContext, msg datapack.Message) {
-	msgType := msg.GetHeader().MsgType
-	processor, ok := msgProcessors[msgType]
-	if !ok {
-		//if has default processor
-		processor, ok = msgProcessors[0]
-	}
-
-	if ok {
-		processor(msg)
+	ctx := context.Background() //todo
+	if p != nil {
+		p.Process(ctx, msg)
 	} else {
 		logger.Warning("msg not impl processor")
 	}
 }
 
-
 func verifySig(user *pb.UserInfo, randomStr string, sig []byte) bool {
-	key:= util.GetPubRsaKey()
+	key := util.GetPubRsaKey()
 	if key == nil {
 		logger.Warning("get key fail")
 		return false
@@ -109,7 +103,7 @@ func verifySig(user *pb.UserInfo, randomStr string, sig []byte) bool {
 	uid := user.Uid
 	did := user.Did
 
-	content := make([]byte, 0, len(uid) + len(did) + len(randomStr))
+	content := make([]byte, 0, len(uid)+len(did)+len(randomStr))
 	content = append(content, []byte(uid)...)
 	content = append(content, []byte(did)...)
 	content = append(content, []byte(randomStr)...)
@@ -134,4 +128,3 @@ func checkMsg(msg datapack.Message) error {
 
 	return nil
 }
-
