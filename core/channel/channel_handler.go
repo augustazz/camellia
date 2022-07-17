@@ -18,6 +18,14 @@ import (
 
 //HeadDataHandlerFunc head
 func HeadDataHandlerFunc(ctx *ConnContext, msg datapack.Message) {
+	defer func() {
+		err := recover()
+		if err != nil {
+			logger.Error("recover error:%v", err)
+			//close client conn? todo
+		}
+	}()
+
 	logger.Debug("head in")
 
 	fail := checkMsg(msg)
