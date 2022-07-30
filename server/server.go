@@ -19,8 +19,8 @@ var id uint64
 type Server struct {
 	connManager *core.ConnManager
 
-	Ctx context.Context
-	Port int
+	Ctx         context.Context
+	Port        int
 	AuthTimeout time.Duration //认证超时时间 秒
 	IdleTimeout time.Duration //连接无数据传输超时时间 分钟
 }
@@ -54,10 +54,10 @@ func (s *Server) listenConn(listener net.Listener) {
 		s.connManager.RegisterToManager(s.AuthTimeout, s.IdleTimeout, c)
 
 		//resp auth msg
-		msg := datapack.NewPbMessage()
-		msg.HeaderPb.MsgType = pb.MsgType_MsgTypeAuthLaunch
+		msg := datapack.NewPbMessageWithEndpoint(pb.Endpoint_ServerConnCenter, pb.Endpoint_Client)
+		msg.HeaderPb.MsgType = pb.MsgType_AuthLaunch
 		randomStr := util.RandBytes(64)
-		msg.PayloadPb = &pb.SimplePayload{
+		msg.PayloadPb = &pb.SimpleMessage{
 			Content: randomStr,
 		}
 		c.Ctx.RandomStr = string(randomStr)

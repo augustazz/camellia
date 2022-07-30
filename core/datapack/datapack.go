@@ -127,8 +127,10 @@ func (pkg *TcpPackage) UnPackFrameData(data []byte) {
 //GetMessage TcpPackage --> Message
 func (pkg *TcpPackage) GetMessage() Message {
 	msg := NewPbMessageHeader()
+	msg.Original = pkg.dataPack
+
 	msg.DeserializeHeader(pkg.dataPack[:pkg.headerLen])
-	msg.Payload = pkg.dataPack[pkg.headerLen:]
+	msg.PayloadOffset = pkg.headerLen
 	return msg
 }
 
@@ -142,6 +144,7 @@ type Message interface {
 
 	DeserializeHeader([]byte)
 
+	GetOriginal() []byte
 	GetHeader() *pb.Header
 	GetPayload() []byte
 
@@ -151,9 +154,10 @@ type Message interface {
 }
 
 type PbMessage struct {
-	HeaderPb *pb.Header
+	Original      []byte
+	PayloadOffset uint32
 
-	Payload   []byte
+	HeaderPb  *pb.Header
 	PayloadPb proto.Message
 }
 
@@ -166,6 +170,15 @@ func NewPbMessageHeader() *PbMessage {
 func NewPbMessage() *PbMessage {
 	return &PbMessage{
 		HeaderPb: &pb.Header{},
+	}
+}
+
+func NewPbMessageWithEndpoint(src, dest pb.Endpoint) *PbMessage {
+	return &PbMessage{
+		HeaderPb: &pb.Header{
+			Src:  src,
+			Dest: dest,
+		},
 	}
 }
 
@@ -195,7 +208,11 @@ func (m *PbMessage) GetHeader() *pb.Header {
 }
 
 func (m *PbMessage) GetPayload() []byte {
-	return m.Payload
+	return m.Original[m.PayloadOffset:]
+}
+
+func (m *PbMessage) GetOriginal() []byte {
+	return m.Original
 }
 
 func checkErr(err error, ifErr string) {

@@ -22,77 +22,64 @@ enum AuthCode {
 }
 
 enum ClientType {
-  ClientTypeUnknown = 0x0;
-  ClientTypeIos = 0x1;
-  ClientTypeAndroid = 0x2;
-  ClientTypeH5 = 0x3;
+  Unknown = 0x0;
+  Ios = 0x1;
+  Android = 0x2;
+  H5 = 0x3;
+}
+
+enum Endpoint {
+  Empty = 0x0;
+  Client = 0x1; //客户端
+  ServerConnCenter = 0x2; //长连接服务
+  ServerPushCenter = 0x3; //推送中心
+  ServerThing = 0x4; //物联网服务
+
+  ServerEndpointMax = 0xFF;
 }
 
 enum MsgType {
-  MsgTypeMin = 0x000; //0
+  Min = 0x000; //0
 
-  //client-->server奇数 client<--server偶数
+  //client-->server奇数
+  //client<--server偶数
 
-  //client
-  MsgTypeAckClient = 0x100;
-  MsgTypeKickOut = 0x102;
-
+  //-----ack-----
+  ClientAck = 0x001;
+  ServerAck = 0x002;
   //-----heartbeat----
-  MsgTypeHeartbeatDown = 0x104;
+  Heartbeat = 0x003;
+  //-----kick out-----
+  KickOut = 0x004;
+
+
+
 
   //-----auth----
-  MsgTypeAuthLaunch = 0x106;
-  MsgTypeAuthVerifyResp = 0x108;
-
-  //thing
-  MsgTypePropEmit = 0x120;
-
-
-  MsgTypeClientMax = 0x2FF;
+  AuthLaunch = 0x010;
+  AuthVerifyReq = 0x011;
+  AuthVerifyResp = 0x012;
 
 
 
-  //server msg
-    MsgTypeServerMin = 0x300;
-  //-----heartbeat----
-  MsgTypeHeartbeatUp = 0x301;
-  //-----auth----
-  MsgTypeAuthVerifyReq = 0x303;
+  //-----thing-----
+  PropEmit = 0x020;
+  PropUpload = 0x021;
 
-
-
-  //client ack to server
-  MsgTypeAckServer = 0x3FD;
-
-
-  //thing
-  MsgTypePropUpload = 0x401;
-  MsgTypePropPullReq = 0x403;
-
-  //server msg end
+  //-----push-----
 
 }
 
 message Header {
   MsgType msgType = 1;
   uint64 msgId = 2;
-  UserInfo userInfo = 3;
-  uint32 version = 4; // 0， 升级版本递增1
-  uint64 timestamp = 5; //unix时间戳，Java的话要 Instant.now().toMill()
+  Endpoint src = 3;
+  Endpoint dest = 4;
+  UserInfo userInfo = 5;
+  uint32 version = 6; // 0， 升级版本递增1
+  uint64 timestamp = 7; //unix时间戳，毫秒
   bool ack = 8; //是否进行应答，确认消息收到
 }
-
-enum ContentType {
-  pb = 0;
-  plain = 1;
-  json = 2;
-}
-
-message SimplePayload {
-  bytes content = 1;
-}
-
-
 
 message UserInfo {
   string uid = 1; //用户id
@@ -101,21 +88,12 @@ message UserInfo {
   string clientVer = 4;
 }
 
-
-
-//payload
-//属性上报
-message PropUpload {
-  map<string, string> props = 1;
+enum ContentType {
+  Pb = 0;
+  Plain = 1;
+  Json = 2;
 }
 
-message AuthReq {
-  string sig = 1;
-}
-
-message AuthResp {
-    AuthCode code = 1;
-}
 
 
 

@@ -10,33 +10,32 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
-
 func ClientAuthHandlerFunc(ctx *channel.ConnContext, msg datapack.Message) {
 	switch msg.GetHeader().MsgType {
-	case pb.MsgType_MsgTypeAuthLaunch:
+	case pb.MsgType_AuthLaunch:
 		ctx.State = enums.ConnStateInAuth
 
-		var payload pb.SimplePayload
+		var payload pb.SimpleMessage
 		err := proto.Unmarshal(msg.GetPayload(), &payload)
 		if err != nil {
 			logger.Error(err)
 			return
 		}
 		origin := payload.Content
-		resp := datapack.NewPbMessage()
-		resp.GetHeader().MsgType = pb.MsgType_MsgTypeAuthVerifyReq
+		resp := datapack.NewPbMessageWithEndpoint(pb.Endpoint_Client, pb.Endpoint_ServerConnCenter)
+		resp.GetHeader().MsgType = pb.MsgType_AuthVerifyReq
 		resp.GetHeader().UserInfo = &pb.UserInfo{
 			Uid: "100023",
 			Did: "DT39485",
 		}
 
-		resp.PayloadPb = &pb.SimplePayload{
+		resp.PayloadPb = &pb.SimpleMessage{
 			Content: encrypt(resp.GetHeader().UserInfo, origin),
 		}
 
-		ctx.WriteChan<- (&datapack.TcpPackage{}).Pack(resp)
-	case pb.MsgType_MsgTypeAuthVerifyResp:
-		var result pb.AuthResp
+		ctx.WriteChan <- (&datapack.TcpPackage{}).Pack(resp)
+	case pb.MsgType_AuthVerifyResp:
+		var result pb.AuthRespMessage
 		err := proto.Unmarshal(msg.GetPayload(), &result)
 		if err != nil {
 			logger.Error(err)
@@ -51,8 +50,6 @@ func ClientAuthHandlerFunc(ctx *channel.ConnContext, msg datapack.Message) {
 	}
 }
 
-
-
 func encrypt(user *pb.UserInfo, origin []byte) []byte {
 	prvKey := util.GetPrvRsaKey()
 	if prvKey == nil {
@@ -61,11 +58,10 @@ func encrypt(user *pb.UserInfo, origin []byte) []byte {
 	}
 
 	//uid+did+random str
-	s := make([]byte, 0, len(user.Uid) + len(user.Did) + len(origin))
+	s := make([]byte, 0, len(user.Uid)+len(user.Did)+len(origin))
 	s = append(s, []byte(user.Uid)...)
 	s = append(s, []byte(user.Did)...)
 	s = append(s, origin...)
 	logger.Debug("content:", string(s))
 	return util.RsaSignWithSha256(s, prvKey)
 }
-

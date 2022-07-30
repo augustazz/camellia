@@ -8,6 +8,7 @@ import (
 	"camellia/core/event"
 	"camellia/logger"
 	pb "camellia/pb_generate"
+	"context"
 	"net"
 	"time"
 )
@@ -16,13 +17,13 @@ func main() {
 	//init logger
 	//init logger
 	//setup logger
+	ctx := context.Background()
+
 	conf := config.LogConfig{
 		Debug: true,
-		Path: "./logs/client",
-
+		Path:  "./logs/client",
 	}
-	logger.SetupLogger("camellia-client", conf)
-
+	logger.SetupLogger(ctx, "camellia-client", conf)
 
 	logger.Info("start tcp dial")
 
@@ -34,7 +35,7 @@ func main() {
 	event.Initialize()
 	c := core.NewConnection(0, &conn)
 	//init and add handlerContext
-	c.Ctx.InitHandlerContext(/*handler.ClientAuthHandlerFunc*/)
+	c.Ctx.InitHandlerContext( /*handler.ClientAuthHandlerFunc*/ )
 
 	go write(c)
 
@@ -53,11 +54,13 @@ func write(conn *core.Connection) {
 		}
 		msg := datapack.PbMessage{
 			HeaderPb: &pb.Header{
-				MsgType: pb.MsgType_MsgTypePropUpload,
+				MsgType: pb.MsgType_PropUpload,
+				Src:     pb.Endpoint_Client,
+				Dest:    pb.Endpoint_ServerThing,
 				MsgId:   counter,
-				Ack: true,
+				Ack:     true,
 			},
-			PayloadPb: &pb.PropUpload{
+			PayloadPb: &pb.PropUploadMessage{
 				Props: map[string]string{
 					"version": "1.0.0",
 				},

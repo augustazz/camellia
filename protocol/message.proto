@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+import "protocol/common.proto";
+
+package pb_generate;
+option go_package = "./pb_generate;pb";
+
+enum AckCode {
+  Success = 0x0;
+  Fail = 0x1;
+
+  //dispatch code
+  DestNotFound = 0x2;
+  DestUnreachable = 0x3;
+  DestReject = 0x4;
+  DestError = 0x5;
+}
+
+
+
+
+message SimpleMessage {
+  bytes content = 1;
+}
+
+//属性上报
+message PropUploadMessage {
+  map<string, string> props = 1;
+}
+
+message AuthReqMessage {
+  string sig = 1;
+}
+
+message AuthRespMessage {
+  AuthCode code = 1;
+}
+
+message AckMessage {
+  MsgType sourceMsgType = 1;
+  uint64 sourceMsgId = 2;
+
+  AckCode code = 4;
+  bytes msg = 5;
+
+  uint64 timestamp = 3; //unix时间戳，毫秒
+}
+
