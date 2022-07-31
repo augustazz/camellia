@@ -1,7 +1,8 @@
 package config
 
 import (
-	"context"
+	"github.com/augustazz/camellia/constants"
+
 	"fmt"
 	"gopkg.in/yaml.v3"
 	"io/ioutil"
@@ -10,25 +11,40 @@ import (
 	"strings"
 )
 
-type Config interface {
-	LoadConfig(ctx context.Context, profiles, path string)
-	GetConfig() Config
-}
-
 var serverConf *ServerConfig
 
+func init() {
+	configPath := os.Getenv("configPath")
+	if configPath == "" {
+		configPath = constants.DefaultConfigPath
+	}
+	loadConfig(configPath)
+}
+
+func GetSrvConfig() *ServerConfig {
+	return serverConf
+}
+
 type ServerConfig struct {
-	App AppConfig `yaml:"app"`
-	Web WebConfig `yaml:"web"`
-	Log LogConfig `yaml:"log"`
+	App  AppConfig  `yaml:"app"`
+	Web  WebConfig  `yaml:"web"`
+	Log  LogConfig  `yaml:"log"`
+	Conn ConnConfig `yaml:"conn"`
 }
 
 type AppConfig struct {
-	Name string `yaml:"name"`
+	Name     string `yaml:"name"`
+	Profiles string `yaml:"profiles"`
 }
 
 type WebConfig struct {
 	Port int `yaml:"port"`
+}
+
+type ConnConfig struct {
+	AuthTimeout  uint32 `yaml:"auth-timeout"`
+	IdleTimeout  uint32 `yaml:"idle-timeout"`
+	AuthFilePath string `yaml:"auth-file-path"`
 }
 
 type LogConfig struct {
@@ -37,30 +53,30 @@ type LogConfig struct {
 }
 
 //LoadConfig load yml config,if has profiles,load after default file,same config item will be rewrite
-func (c *ServerConfig) LoadConfig(ctx context.Context, profiles, path string) {
+func loadConfig(path string) *ServerConfig {
 	if !isYamlFileConfig(path) {
 		log.Fatalln("not support file: ", path)
-		return
+		return nil
+	}
+	if serverConf == nil {
+		serverConf = &ServerConfig{}
 	}
 	//load default config file
-	loadConfig0(path, c)
-	if profiles != "" {
+	loadConfig0(path, serverConf)
+	if serverConf.App.Profiles != "" {
 		//load config file with profile,eg:config-test.yaml
 		w := strings.LastIndexByte(path, '.')
 		name, suffix := path[:w], path[w+1:]
-		for _, p := range strings.Split(profiles, ",") {
+		for _, p := range strings.Split(serverConf.App.Profiles, ",") {
 			fileWithProfile := fmt.Sprintf("%s-%s.%s", name, p, suffix)
-			loadConfig0(fileWithProfile, c)
+			loadConfig0(fileWithProfile, serverConf)
 			log.Println("load config file success: ", fileWithProfile)
 		}
 	}
-}
-
-func (c *ServerConfig) GetConfig() Config {
 	return serverConf
 }
 
-func loadConfig0(path string, conf Config) {
+func loadConfig0(path string, conf *ServerConfig) {
 	open, err := os.Open(path)
 
 	if err != nil {

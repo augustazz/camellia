@@ -1,7 +1,12 @@
 app:
   name: camellia
+  profiles:
 web:
   port: 9090
+conn:
+  auth-timeout: 30 #second
+  idle-timeout: 30 #minute
+  auth-file-path: /Users/xuwenfeng/Documents/workspace/go-space/camellia/client
 
 log:
   debug: true
