@@ -1,4 +1,4 @@
-package enums
+package constants
 
 type ConnState uint16
 
