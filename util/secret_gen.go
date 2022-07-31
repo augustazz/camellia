@@ -1,7 +1,6 @@
 package util
 
 import (
-	"camellia/logger"
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
@@ -10,12 +9,12 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"github.com/augustazz/camellia/logger"
 	"io/ioutil"
 	"os"
 	"strings"
 )
 
-var secretPath = "/path/to/secret/"
 var SecretCache = make(map[string][]byte)
 
 type SecretKeyType uint8
@@ -25,8 +24,8 @@ const (
 	SecretKeyPub
 )
 
-func GetPrvRsaKey() []byte {
-	key, err := getRsaKey(secretFileName(secretPath, SecretKeyPrv))
+func GetPrvRsaKey(path string) []byte {
+	key, err := getRsaKey(secretFileName(path, SecretKeyPrv))
 	if err != nil {
 		logger.Error(err)
 		return nil
@@ -34,8 +33,8 @@ func GetPrvRsaKey() []byte {
 	return key
 }
 
-func GetPubRsaKey() []byte {
-	key, err := getRsaKey(secretFileName(secretPath, SecretKeyPub))
+func GetPubRsaKey(path string) []byte {
+	key, err := getRsaKey(secretFileName(path, SecretKeyPub))
 	if err != nil {
 		logger.Error(err)
 		return nil

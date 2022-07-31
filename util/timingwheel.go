@@ -1,9 +1,9 @@
 package util
 
 import (
-	"camellia/core/container"
 	"container/list"
 	"errors"
+	"github.com/augustazz/camellia/core/container"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -250,7 +250,6 @@ func (tw *TimingWheel) ScheduleFunc(s Scheduler, f func()) (t *Timer) {
 	return
 }
 
-
 // Timer represents a single event. When the Timer expires, the given
 // task will be executed.
 type Timer struct {
@@ -380,10 +379,6 @@ func (b *bucket) Flush(reinsert func(*Timer)) {
 		reinsert(t)
 	}
 }
-
-
-
-
 
 // truncate returns the result of rounding x toward zero to a multiple of m.
 // If m <= 0, Truncate returns x unchanged.
