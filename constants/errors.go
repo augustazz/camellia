@@ -9,6 +9,9 @@ var (
 	MsgValidateErrHeaderEmpty   = errors.New("msg header is empty")
 	MsgValidateErrMsgTypeEmpty  = errors.New("msg header msgType is empty")
 	MsgValidateErrUserInfoEmpty = errors.New("msg header userInfo is empty")
-)
 
-var ()
+	MsgProcessorNotFound = errors.New("msg processor not found")
+	ServicesNotAvailable = errors.New("services not available")
+
+	ConfigServicesNotFound = errors.New("config services not found")
+)

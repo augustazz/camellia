@@ -1,14 +1,15 @@
 package main
 
 import (
-	"camellia/config"
-	"camellia/core"
-	"camellia/core/datapack"
-	"camellia/core/enums"
-	"camellia/core/event"
-	"camellia/logger"
-	pb "camellia/pb_generate"
 	"context"
+	"github.com/augustazz/camellia/client/golang/handler"
+	"github.com/augustazz/camellia/config"
+	"github.com/augustazz/camellia/constants"
+	"github.com/augustazz/camellia/core"
+	"github.com/augustazz/camellia/core/datapack"
+	"github.com/augustazz/camellia/core/event"
+	"github.com/augustazz/camellia/logger"
+	pb "github.com/augustazz/camellia/pb_generate"
 	"net"
 	"time"
 )
@@ -35,7 +36,7 @@ func main() {
 	event.Initialize()
 	c := core.NewConnection(0, &conn)
 	//init and add handlerContext
-	c.Ctx.InitHandlerContext( /*handler.ClientAuthHandlerFunc*/ )
+	c.Ctx.InitHandlerContext(handler.ClientAuthHandlerFunc)
 
 	go write(c)
 
@@ -45,10 +46,10 @@ func main() {
 func write(conn *core.Connection) {
 	counter := uint64(0)
 	for {
-		if conn.Ctx.State == enums.ConnStateClosed {
+		if conn.Ctx.State == constants.ConnStateClosed {
 			break
 		}
-		if conn.Ctx.State != enums.ConnStateReady {
+		if conn.Ctx.State != constants.ConnStateReady {
 			time.Sleep(time.Second)
 			continue
 		}
@@ -58,7 +59,11 @@ func write(conn *core.Connection) {
 				Src:     pb.Endpoint_Client,
 				Dest:    pb.Endpoint_ServerThing,
 				MsgId:   counter,
-				Ack:     true,
+				UserInfo: &pb.UserInfo{
+					Uid: "100023",
+					Did: "DT39485",
+				},
+				Ack: true,
 			},
 			PayloadPb: &pb.PropUploadMessage{
 				Props: map[string]string{

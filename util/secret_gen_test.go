@@ -1,32 +1,23 @@
 package util
 
 import (
-	"context"
 	"encoding/hex"
 	"fmt"
 	"github.com/augustazz/camellia/config"
 	"testing"
-	"time"
 )
 
-var conf *config.ServerConfig
-var ctx = context.Background()
-
-func init() {
-	timeout, cancelFunc := context.WithTimeout(ctx, 10*time.Second)
-	defer cancelFunc()
-	conf = config.LoadConfig(timeout, "", "../resources/config.yml")
-}
+var connConf = config.GetConnConfig()
 
 func TestGenKey(t *testing.T) {
 	fmt.Println("-------------------------------生成RSA公私钥-----------------------------------------")
-	GenRsaKey(conf.Conn.AuthFilePath)
+	GenRsaKey(connConf.AuthFilePath)
 }
 
 func TestRsaDecrypt(t *testing.T) {
 	//rsa 密钥文件产生
 	fmt.Println("-------------------------------获取RSA公私钥-----------------------------------------")
-	prvKey := GetPrvRsaKey(conf.Conn.AuthFilePath)
+	prvKey := GetPrvRsaKey(connConf.AuthFilePath)
 	if prvKey == nil {
 		fmt.Println("read err")
 		return

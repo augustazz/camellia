@@ -1,19 +1,20 @@
 package handler
 
 import (
-	"camellia/core/channel"
-	"camellia/core/datapack"
-	"camellia/core/enums"
-	"camellia/core/util"
-	"camellia/logger"
-	pb "camellia/pb_generate"
+	"github.com/augustazz/camellia/config"
+	"github.com/augustazz/camellia/constants"
+	"github.com/augustazz/camellia/core/channel"
+	"github.com/augustazz/camellia/core/datapack"
+	"github.com/augustazz/camellia/logger"
+	pb "github.com/augustazz/camellia/pb_generate"
+	"github.com/augustazz/camellia/util"
 	"github.com/golang/protobuf/proto"
 )
 
 func ClientAuthHandlerFunc(ctx *channel.ConnContext, msg datapack.Message) {
 	switch msg.GetHeader().MsgType {
 	case pb.MsgType_AuthLaunch:
-		ctx.State = enums.ConnStateInAuth
+		ctx.State = constants.ConnStateInAuth
 
 		var payload pb.SimpleMessage
 		err := proto.Unmarshal(msg.GetPayload(), &payload)
@@ -22,6 +23,10 @@ func ClientAuthHandlerFunc(ctx *channel.ConnContext, msg datapack.Message) {
 			return
 		}
 		origin := payload.Content
+		if len(origin) == 0 {
+			logger.Error("server resp auth content is empty")
+			return
+		}
 		resp := datapack.NewPbMessageWithEndpoint(pb.Endpoint_Client, pb.Endpoint_ServerConnCenter)
 		resp.GetHeader().MsgType = pb.MsgType_AuthVerifyReq
 		resp.GetHeader().UserInfo = &pb.UserInfo{
@@ -43,7 +48,7 @@ func ClientAuthHandlerFunc(ctx *channel.ConnContext, msg datapack.Message) {
 		}
 		if result.Code == pb.AuthCode_AuthSuccess {
 			logger.Info("auth success")
-			ctx.State = enums.ConnStateReady
+			ctx.State = constants.ConnStateReady
 		} else {
 			logger.Info("auth fail")
 		}
@@ -51,7 +56,7 @@ func ClientAuthHandlerFunc(ctx *channel.ConnContext, msg datapack.Message) {
 }
 
 func encrypt(user *pb.UserInfo, origin []byte) []byte {
-	prvKey := util.GetPrvRsaKey()
+	prvKey := util.GetPrvRsaKey(config.GetConnConfig().AuthFilePath)
 	if prvKey == nil {
 		logger.Info("prvKey fail")
 		return nil

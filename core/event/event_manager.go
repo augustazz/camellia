@@ -1,7 +1,7 @@
 package event
 
 import (
-	"camellia/logger"
+	"github.com/augustazz/camellia/logger"
 )
 
 var Inst *EventManager

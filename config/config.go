@@ -25,11 +25,20 @@ func GetSrvConfig() *ServerConfig {
 	return serverConf
 }
 
+func GetServiceConfig() []*Service {
+	return serverConf.Services
+}
+
+func GetConnConfig() ConnConfig {
+	return serverConf.Conn
+}
+
 type ServerConfig struct {
-	App  AppConfig  `yaml:"app"`
-	Web  WebConfig  `yaml:"web"`
-	Log  LogConfig  `yaml:"log"`
-	Conn ConnConfig `yaml:"conn"`
+	App      AppConfig  `yaml:"app"`
+	Web      WebConfig  `yaml:"web"`
+	Log      LogConfig  `yaml:"log"`
+	Conn     ConnConfig `yaml:"conn"`
+	Services []*Service `yaml:"services"`
 }
 
 type AppConfig struct {
@@ -50,6 +59,11 @@ type ConnConfig struct {
 type LogConfig struct {
 	Debug bool   `yaml:"debug"`
 	Path  string `yaml:"path"`
+}
+
+type Service struct {
+	Name string   `yaml:"name"`
+	Url  []string `yaml:"url"`
 }
 
 //LoadConfig load yml config,if has profiles,load after default file,same config item will be rewrite

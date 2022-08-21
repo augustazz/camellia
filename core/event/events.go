@@ -1,8 +1,8 @@
 package event
 
 import (
-	"camellia/core/enums"
 	"fmt"
+	"github.com/augustazz/camellia/constants"
 )
 
 type EventType uint16
@@ -14,8 +14,8 @@ const (
 
 type ConnStatusChanged struct {
 	ConnId  uint64
-	Current enums.ConnState
-	Before  enums.ConnState
+	Current constants.ConnState
+	Before  constants.ConnState
 	Err     error
 	Msg     string
 }
