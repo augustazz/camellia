@@ -6,14 +6,15 @@ package pb_generate;
 option go_package = "./pb_generate;pb";
 
 enum AckCode {
-  Success = 0x0;
-  Fail = 0x1;
+  Received = 0x0;
+  Success = 0x1;
+  Fail = 0x2;
 
   //dispatch code
-  DestNotFound = 0x2;
-  DestUnreachable = 0x3;
-  DestReject = 0x4;
-  DestError = 0x5;
+  DestNotFound = 0x3;
+  DestUnreachable = 0x4;
+  DestReject = 0x5;
+  DestError = 0x6;
 }
 
 

@@ -1,7 +1,7 @@
 package web
 
 import (
-	"camellia/logger"
+	"github.com/augustazz/camellia/logger"
 	"net/http"
 )
 
