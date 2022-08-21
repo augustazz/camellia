@@ -1,9 +1,9 @@
 package logger
 
 import (
-	"camellia/config"
 	"context"
 	"fmt"
+	"github.com/augustazz/camellia/config"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -19,17 +19,17 @@ var defaultLogPath = "./logs"
 func SetupLogger(ctx context.Context, appName string, conf config.LogConfig) func() {
 	hook := lumberjack.Logger{
 		Filename:   buildFileName(conf.Path, appName), // 日志文件路径
-		MaxSize:    5 * 1024,                             // 每个日志文件保存的最大尺寸 单位：M
-		MaxBackups: 128,                                  // 日志文件最多保存多少个备份
-		MaxAge:     7,                                    // 文件最多保存多少天
-		Compress:   true,                                 // 是否压缩
+		MaxSize:    5 * 1024,                          // 每个日志文件保存的最大尺寸 单位：M
+		MaxBackups: 128,                               // 日志文件最多保存多少个备份
+		MaxAge:     7,                                 // 文件最多保存多少天
+		Compress:   true,                              // 是否压缩
 	}
 
 	encoderConfig := zapcore.EncoderConfig{
-		TimeKey:        "@timestamp",
-		LevelKey:       "level",
-		NameKey:        "logger",
-		CallerKey:      "class",
+		TimeKey:  "@timestamp",
+		LevelKey: "level",
+		NameKey:  "logger",
+		//CallerKey:      "class",
 		MessageKey:     "message",
 		StacktraceKey:  "stack",
 		LineEnding:     zapcore.DefaultLineEnding,
@@ -91,4 +91,3 @@ func buildFileName(configPath, appName string) string {
 	}
 	return fmt.Sprintf("%s%s.json", configPath, appName)
 }
-

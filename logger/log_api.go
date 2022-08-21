@@ -1,41 +1,88 @@
 package logger
 
+import (
+	"fmt"
+	"go.uber.org/zap"
+	"runtime"
+	"strconv"
+	"strings"
+)
+
+var innerCallDepth = 1
+
 func Info(v ...interface{}) {
-	Sugar.Info(v...)
+	Holder.Info(getMessage("", v), zap.String("caller", getCaller(1)))
 }
 
 func Infof(format string, v ...interface{}) {
-	Sugar.Infof(format, v...)
+	Holder.Info(getMessage(format, v), zap.String("caller", getCaller(1)))
 }
 
 func Debug(v ...interface{}) {
-	Sugar.Debug(v...)
+	Holder.Debug(getMessage("", v), zap.String("caller", getCaller(1)))
 }
 
 func Debugf(format string, v ...interface{}) {
-	Sugar.Infof(format, v...)
+	Holder.Debug(getMessage(format, v), zap.String("caller", getCaller(1)))
 }
 
 func Warning(v ...interface{}) {
-	Sugar.Info(v...)
+	Holder.Warn(getMessage("", v), zap.String("caller", getCaller(1)))
 }
 
 func Warningf(format string, v ...interface{}) {
-	Sugar.Warnf(format, v...)
+	Holder.Warn(getMessage(format, v), zap.String("caller", getCaller(1)))
 }
 
 func Error(v ...interface{}) {
-	Sugar.Error(v...)
+	Holder.Error(getMessage("", v), zap.String("caller", getCaller(1)))
 }
 
 func Errorf(format string, v ...interface{}) {
-	Sugar.Errorf(format, v...)
+	Holder.Error(getMessage(format, v), zap.String("caller", getCaller(1)))
 }
 
 func Fatal(v ...interface{}) {
-	Sugar.Fatal(v...)
+	Holder.Fatal(getMessage("", v), zap.String("caller", getCaller(1)))
 }
 
 func Fatalf(format string, v ...interface{}) {
-	Sugar.Fatalf(format, v...)
+	Holder.Fatal(getMessage(format, v), zap.String("caller", getCaller(1)))
+}
+
+func getMessage(template string, fmtArgs []interface{}) string {
+	if len(fmtArgs) == 0 {
+		return template
+	}
+
+	if template != "" {
+		return fmt.Sprintf(template, fmtArgs...)
+	}
+
+	if len(fmtArgs) == 1 {
+		if str, ok := fmtArgs[0].(string); ok {
+			return str
+		}
+	}
+	return fmt.Sprint(fmtArgs...)
+}
+
+func getCaller(callDepth int) string {
+	var buf strings.Builder
+
+	_, file, line, ok := runtime.Caller(callDepth + innerCallDepth)
+	if ok {
+		short := file
+		for i := len(file) - 1; i > 0; i-- {
+			if file[i] == '/' {
+				short = file[i+1:]
+				break
+			}
+		}
+		buf.WriteString(short)
+		buf.WriteByte(':')
+		buf.WriteString(strconv.Itoa(line))
+	}
+
+	return buf.String()
 }
