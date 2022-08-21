@@ -6,7 +6,7 @@ web:
 conn:
   auth-timeout: 30 #second
   idle-timeout: 30 #minute
-  auth-file-path: /Users/xuwenfeng/Documents/workspace/go-space/camellia/client
+  auth-file-path: /etc/camellia
 
 log:
   debug: true

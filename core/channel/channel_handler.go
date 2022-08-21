@@ -1,14 +1,14 @@
 package channel
 
 import (
-	"camellia/core/datapack"
-	"camellia/core/enums"
-	"camellia/core/event"
-	"camellia/core/processor"
-	"camellia/core/util"
-	"camellia/logger"
-	pb "camellia/pb_generate"
-	"context"
+	"github.com/augustazz/camellia/config"
+	"github.com/augustazz/camellia/constants"
+	"github.com/augustazz/camellia/core/datapack"
+	"github.com/augustazz/camellia/core/event"
+	"github.com/augustazz/camellia/core/processor"
+	"github.com/augustazz/camellia/logger"
+	pb "github.com/augustazz/camellia/pb_generate"
+	"github.com/augustazz/camellia/util"
 	"github.com/golang/protobuf/proto"
 	"time"
 )
@@ -31,7 +31,7 @@ func HeadDataHandlerFunc(ctx *ConnContext, msg datapack.Message) {
 	fail := checkMsg(msg)
 	if fail != nil {
 		logger.Warning("decode msg is invalid,reason: ", fail.Error())
-		ctx.Abort = true
+		ctx.Abort()
 		return
 	}
 
@@ -41,6 +41,7 @@ func HeadDataHandlerFunc(ctx *ConnContext, msg datapack.Message) {
 //TailDataHandlerFunc tail
 func TailDataHandlerFunc(ctx *ConnContext, msg datapack.Message) {
 	logger.Info("tail out")
+	ctx.AbortReset()
 }
 
 //AuthHandlerFunc server verify auth request
@@ -56,29 +57,37 @@ func AuthHandlerFunc(ctx *ConnContext, msg datapack.Message) {
 		ctx.Key = k
 	}
 
-	if header.MsgType == pb.MsgType_MsgTypeAuthVerifyReq {
-		if ctx.State != enums.ConnStateInAuth {
+	if header.MsgType == pb.MsgType_AuthVerifyReq {
+		resp := datapack.NewPbMessageWithEndpoint(pb.Endpoint_ServerConnCenter, pb.Endpoint_Client)
+		resp.HeaderPb.MsgType = pb.MsgType_AuthVerifyResp
+
+		if ctx.State != constants.ConnStateInAuth {
 			event.PostEvent(event.EventTypeConnStatusChanged, ctx.State)
-			ctx.State = enums.ConnStateInAuth
+			ctx.State = constants.ConnStateInAuth
 		}
 
-		var payload pb.SimplePayload
+		var payload pb.SimpleMessage
 		err := proto.Unmarshal(msg.GetPayload(), &payload)
 		if err != nil {
-			logger.Info("err", err)
+			logger.Errorf("pb unmarshal err", err)
+			return
+		}
+		if len(payload.GetContent()) == 0 {
+			logger.Warningf("auth req fail[%s],header:[%s]", "payload is empty", msg.GetHeader().String())
+			resp.PayloadPb = &pb.AuthRespMessage{
+				Code: pb.AuthCode_AuthFailure,
+			}
+			ctx.WriteChan <- (&datapack.TcpPackage{}).Pack(resp)
 			return
 		}
 
 		succ := verifySig(user, ctx.RandomStr, payload.Content)
 		code := pb.AuthCode_AuthFailure
 		if succ {
-			ctx.State = enums.ConnStateReady
+			ctx.State = constants.ConnStateReady
 			code = pb.AuthCode_AuthSuccess
 		}
-
-		resp := datapack.NewPbMessage()
-		resp.HeaderPb.MsgType = pb.MsgType_MsgTypeAuthVerifyResp
-		resp.PayloadPb = &pb.AuthResp{
+		resp.PayloadPb = &pb.AuthRespMessage{
 			Code: code,
 		}
 		ctx.WriteChan <- (&datapack.TcpPackage{}).Pack(resp)
@@ -86,24 +95,43 @@ func AuthHandlerFunc(ctx *ConnContext, msg datapack.Message) {
 	}
 
 	//没验证通过时，数据丢弃
-	if ctx.State != enums.ConnStateReady {
-		ctx.Abort = true
+	if ctx.State != constants.ConnStateReady {
+		ctx.Abort()
 	}
 }
 
 func DispatchHandlerFunc(connCtx *ConnContext, msg datapack.Message) {
-	p := processor.GetProcessor(msg.GetHeader())
+	h := msg.GetHeader()
 
-	ctx := context.Background() //todo
-	if p != nil {
-		p.Process(ctx, msg)
-	} else {
-		logger.Warning("msg not impl processor")
+	if h.Dest == pb.Endpoint_ServerConnCenter {
+		return
+	}
+
+	err := processor.PushToProcessor(msg)
+	if err != nil {
+		logger.Error("msg process err:", err)
+	}
+}
+
+func AckHandlerFunc(connCtx *ConnContext, msg datapack.Message) {
+	h := msg.GetHeader()
+	if h.Ack { //ack
+		resp := datapack.NewPbMessageWithEndpoint(pb.Endpoint_ServerConnCenter, h.Src)
+		resp.GetHeader().MsgType = pb.MsgType_ServerAck
+		payload := &pb.AckMessage{
+			SourceMsgId:   h.MsgId,
+			SourceMsgType: h.MsgType,
+
+			Code:      pb.AckCode_Received,
+			Timestamp: uint64(time.Now().UnixNano() / 1e6),
+		}
+		resp.PayloadPb = payload
+		connCtx.WriteChan <- (&datapack.TcpPackage{}).Pack(resp)
 	}
 }
 
 func verifySig(user *pb.UserInfo, randomStr string, sig []byte) bool {
-	key := util.GetPubRsaKey()
+	key := util.GetPubRsaKey(config.GetSrvConfig().Conn.AuthFilePath)
 	if key == nil {
 		logger.Warning("get key fail")
 		return false
@@ -121,17 +149,17 @@ func verifySig(user *pb.UserInfo, randomStr string, sig []byte) bool {
 
 func checkMsg(msg datapack.Message) error {
 	if msg == nil {
-		return enums.MsgValidateErrEmpty
+		return constants.MsgValidateErrEmpty
 	}
 	h := msg.GetHeader()
 	if h == nil {
-		return enums.MsgValidateErrHeaderEmpty
+		return constants.MsgValidateErrHeaderEmpty
 	}
 	if h.MsgType == 0 {
-		return enums.MsgValidateErrMsgTypeEmpty
+		return constants.MsgValidateErrMsgTypeEmpty
 	}
-	if h.GetUserInfo() == nil {
-		return enums.MsgValidateErrUserInfoEmpty
+	if h.Src == pb.Endpoint_Client && h.GetUserInfo() == nil {
+		return constants.MsgValidateErrUserInfoEmpty
 	}
 
 	return nil

@@ -1,9 +1,9 @@
 package core
 
 import (
-	"camellia/core/enums"
-	"camellia/core/util"
-	"camellia/logger"
+	"github.com/augustazz/camellia/constants"
+	"github.com/augustazz/camellia/logger"
+	"github.com/augustazz/camellia/util"
 	"sync"
 	"time"
 )
@@ -43,7 +43,7 @@ func (m *ConnManager) RegisterToManager(authTimeoutS, readTimeoutM time.Duration
 			return
 		}
 		state := conn.Ctx.State
-		if state == enums.ConnStateInit || state == enums.ConnStateInAuth {
+		if state == constants.ConnStateInit || state == constants.ConnStateInAuth {
 			conn.Close("auth timeout")
 		}
 	})
@@ -77,7 +77,7 @@ func (m *ConnManager) RemoveFromManager(reason string, conn *Connection) *Connec
 }
 
 func idleScanner(wheel *util.TimingWheel, readTimeoutM time.Duration, c *Connection) {
-	if c == nil || c.Ctx.State != enums.ConnStateReady {
+	if c == nil || c.Ctx.State != constants.ConnStateReady {
 		return
 	}
 	if time.Now().Sub(c.Ctx.LastReadTime) > readTimeoutM {

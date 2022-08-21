@@ -1,8 +1,8 @@
 package channel
 
 import (
-	"camellia/core/datapack"
-	"camellia/core/enums"
+	"github.com/augustazz/camellia/constants"
+	"github.com/augustazz/camellia/core/datapack"
 	"sync"
 	"time"
 )
@@ -13,12 +13,12 @@ type ConnContext struct {
 
 	//core.Connection info
 	Key       string
-	State     enums.ConnState
+	State     constants.ConnState
 	WriteChan chan<- []byte
 	RandomStr string
 
 	//handler chain
-	Abort      bool //中断传递
+	abort      bool //中断传递
 	Head, Tail HandlerContext
 
 	ConnectTime   time.Time
@@ -70,6 +70,14 @@ func (ctx *ConnContext) AddHandlerContext(handler HandlerContext) {
 	ctx.Tail.pre = &handler
 }
 
+func (ctx *ConnContext) Abort() {
+	ctx.abort = true
+}
+
+func (ctx *ConnContext) AbortReset() {
+	ctx.abort = false
+}
+
 //func (ctx *ConnContext) HandlerContextInitializer() func(apply ...Initializer) {
 //	return func(apply ...Initializer) {
 //		for _, h := range apply {
@@ -86,15 +94,15 @@ type HandlerContext struct {
 
 func (h *HandlerContext) Fire(ctx *ConnContext, msg datapack.Message) {
 	//if abort且不是tai节点， 直接传给下一个，h.next==nil表示tail
-	if ctx.Abort && h.next != nil {
+	if ctx.abort && h.next != nil {
 		h.next.Fire(ctx, msg)
-	}
+	} else {
+		//执行func
+		h.Handler(ctx, msg)
 
-	//执行func
-	h.Handler(ctx, msg)
-
-	//传递
-	if h.next != nil {
-		h.next.Fire(ctx, msg)
+		//传递
+		if h.next != nil {
+			h.next.Fire(ctx, msg)
+		}
 	}
 }

@@ -1,11 +1,11 @@
 package core
 
 import (
-	"camellia/core/channel"
-	"camellia/core/datapack"
-	"camellia/core/enums"
-	"camellia/core/event"
-	"camellia/logger"
+	"github.com/augustazz/camellia/constants"
+	"github.com/augustazz/camellia/core/channel"
+	"github.com/augustazz/camellia/core/datapack"
+	"github.com/augustazz/camellia/core/event"
+	"github.com/augustazz/camellia/logger"
 	"io"
 	"net"
 	"time"
@@ -28,7 +28,7 @@ func NewConnection(id uint64, conn *net.Conn) *Connection {
 		recvChan:  make(chan datapack.Message, 512),
 		writeChan: make(chan []byte, 512),
 	}
-	c.Ctx = &channel.ConnContext{WriteChan: c.writeChan, State: enums.ConnStateInit}
+	c.Ctx = &channel.ConnContext{WriteChan: c.writeChan, State: constants.ConnStateInit}
 
 	go c.startWriteHandler()
 	go c.startMsgHandler()
@@ -40,7 +40,7 @@ func (c *Connection) Close(msg string) error {
 	err := (*c.conn).Close()
 	event.PostEvent(event.EventTypeConnStatusChanged, event.ConnStatusChanged{
 		ConnId:  c.Id,
-		Current: enums.ConnStateClosed,
+		Current: constants.ConnStateClosed,
 		Before:  c.Ctx.State,
 		Err:     err,
 		Msg:     msg,
@@ -49,15 +49,12 @@ func (c *Connection) Close(msg string) error {
 }
 
 func (c *Connection) ReadLoop() {
-	for c.Ctx.State != enums.ConnStateClosed {
+	for c.Ctx.State != constants.ConnStateClosed {
 		frameHeader := make([]byte, datapack.FIXED_HEADER_LEN)
 		_, err := io.ReadFull(*c.conn, frameHeader)
 		if err != nil {
-			logger.Error("read err", err)
-			if err == io.EOF {
-				break
-			}
-			continue
+			logger.Error("read err:", err)
+			break
 		}
 
 		pack := datapack.TcpPackage{}

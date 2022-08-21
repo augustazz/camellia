@@ -2,9 +2,9 @@ package datapack
 
 import (
 	"bytes"
-	"camellia/logger"
-	pb "camellia/pb_generate"
 	"encoding/binary"
+	"github.com/augustazz/camellia/logger"
+	pb "github.com/augustazz/camellia/pb_generate"
 	"github.com/golang/protobuf/proto"
 )
 

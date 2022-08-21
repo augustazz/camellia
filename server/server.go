@@ -1,15 +1,15 @@
 package server
 
 import (
-	"camellia/core"
-	"camellia/core/channel"
-	"camellia/core/datapack"
-	"camellia/core/event"
-	"camellia/core/util"
-	"camellia/logger"
-	pb "camellia/pb_generate"
 	"context"
 	"fmt"
+	"github.com/augustazz/camellia/core"
+	"github.com/augustazz/camellia/core/channel"
+	"github.com/augustazz/camellia/core/datapack"
+	"github.com/augustazz/camellia/core/event"
+	"github.com/augustazz/camellia/logger"
+	pb "github.com/augustazz/camellia/pb_generate"
+	"github.com/augustazz/camellia/util"
 	"net"
 	"time"
 )
@@ -73,7 +73,7 @@ func newConnection(conn *net.Conn) *core.Connection {
 	clientId := id
 	c := core.NewConnection(clientId, conn)
 	//init and add handlerContext
-	c.Ctx.InitHandlerContext(channel.AuthHandlerFunc, channel.DispatchHandlerFunc)
+	c.Ctx.InitHandlerContext(channel.AuthHandlerFunc, channel.DispatchHandlerFunc, channel.AckHandlerFunc)
 
 	//post event
 	event.PostEvent(event.EventTypeConnActive, "")
